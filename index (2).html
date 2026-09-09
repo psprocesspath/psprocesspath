@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Site approval pathway</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EEF2F5; --paper-line:#D7DEE4; --card:#FFFFFF; --ink:#152331; --ink-soft:#51606E;
+    --blue:#0B5D8F; --blue-dark:#083F62; --amber:#D98A1D; --amber-soft:#FCEEDA;
+    --line:#C7D1D9; --good:#2F7A4F; --good-soft:#E4F3E9; --wait:#8A5A0F; --wait-soft:#FCEEDA;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;font-family:'Inter',-apple-system,sans-serif;color:var(--ink);
+    background:linear-gradient(var(--paper-line) 1px, transparent 1px) 0 0/100% 28px, var(--paper);
+    min-height:100vh;padding:0 0 60px;
+  }
+  .wrap{max-width:680px;margin:0 auto;padding:0 18px;}
+  header{padding:28px 0 16px;}
+  .kicker{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.04em;color:var(--blue);margin:0 0 6px;}
+  h1{font-size:26px;line-height:1.25;margin:0 0 8px;font-weight:700;letter-spacing:-0.01em;}
+  .sub{color:var(--ink-soft);font-size:15px;line-height:1.55;margin:0;}
+
+  .tabs{display:flex;gap:6px;margin-top:20px;border-bottom:1px solid var(--line);}
+  .tab{font-family:'IBM Plex Mono',monospace;font-size:12.5px;padding:9px 14px;cursor:pointer;color:var(--ink-soft);border-bottom:2px solid transparent;}
+  .tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600;}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:16px;}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+  .chip{font-family:'IBM Plex Mono',monospace;font-size:12.5px;border:1px solid var(--line);background:var(--paper);color:var(--ink-soft);padding:6px 12px;border-radius:20px;cursor:pointer;user-select:none;transition:background .15s,color .15s,border-color .15s;}
+  .chip.active{background:var(--blue);border-color:var(--blue);color:#fff;}
+
+  input[type=text]{width:100%;padding:12px 14px;font-size:15px;font-family:inherit;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);}
+  input[type=text]:focus{outline:2px solid var(--blue);outline-offset:1px;background:#fff;}
+  select{font-family:inherit;font-size:13px;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);}
+
+  .results{margin-top:10px;max-height:340px;overflow-y:auto;border-top:1px solid var(--paper-line);}
+  .result{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid var(--paper-line);cursor:pointer;}
+  .result:hover{background:var(--paper);}
+  .result .name{font-size:14.5px;font-weight:500;}
+  .result .dept{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);white-space:nowrap;}
+  .empty-note{color:var(--ink-soft);font-size:13.5px;padding:14px 4px;}
+
+  .pathway-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:2px;}
+  .pathway-title{font-size:19px;font-weight:700;line-height:1.3;}
+  .pathway-dept{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--blue);margin-top:2px;}
+  .back-link{font-size:13px;color:var(--blue);cursor:pointer;text-decoration:underline;white-space:nowrap;padding-top:2px;}
+
+  .email-subject{margin-top:12px;background:var(--paper);border:1px dashed var(--line);border-radius:8px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink-soft);}
+  .email-subject b{color:var(--ink);}
+
+  .stage-banner{margin-top:14px;padding:10px 14px;border-radius:8px;font-size:13.5px;font-weight:600;}
+  .stage-banner.active{background:var(--wait-soft);color:var(--wait);}
+  .stage-banner.complete{background:var(--good-soft);color:var(--good);}
+
+  .steps{margin-top:16px;position:relative;}
+  .step{position:relative;padding-left:34px;padding-bottom:20px;}
+  .step:last-child{padding-bottom:2px;}
+  .step::before{content:'';position:absolute;left:11px;top:26px;bottom:-2px;width:2px;background:var(--line);}
+  .step:last-child::before{display:none;}
+  .step-num{position:absolute;left:0;top:0;width:24px;height:24px;border-radius:50%;background:var(--line);color:#fff;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;display:flex;align-items:center;justify-content:center;}
+  .step-num.done{background:var(--good);}
+  .step-num.current{background:var(--blue);}
+  .step-body{background:var(--paper);border:1px solid var(--paper-line);border-radius:8px;padding:12px 14px;}
+  .step-body.done{background:var(--good-soft);border-color:#C7E3D0;}
+  .step-body.current{border-color:var(--blue);}
+  .step-desc{font-size:14.5px;line-height:1.5;margin:0 0 8px;}
+  .step-tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+  .tag{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:3px 9px;border-radius:5px;}
+  .tag.action{background:var(--amber-soft);color:#8A5A0F;}
+  .tag.dept{background:#DCEBF4;color:var(--blue-dark);}
+  .tag.done{background:var(--good);color:#fff;}
+  .done-meta{font-size:11.5px;color:var(--good);margin-top:6px;}
+  .undo-link{font-size:11px;color:var(--ink-soft);text-decoration:underline;cursor:pointer;margin-left:8px;}
+  .mark-done-row{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .mark-done-row input[type=text]{flex:1;min-width:140px;padding:8px 10px;font-size:13px;}
+
+  .undefined{color:var(--ink-soft);font-style:italic;}
+
+  button{font-family:inherit;font-size:14px;font-weight:600;padding:11px 18px;border-radius:8px;border:1px solid transparent;cursor:pointer;transition:opacity .15s;}
+  button:active{opacity:.8;}
+  button.small{font-size:12.5px;padding:8px 12px;}
+  .btn-primary{background:var(--blue);color:#fff;}
+  .btn-ghost{background:transparent;border-color:var(--line);color:var(--ink);}
+  .copy-note{font-size:12.5px;color:var(--good);margin-top:8px;min-height:16px;}
+
+  .flow-box{margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 18px 16px;}
+  .flow-box-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;color:var(--ink-soft);margin:0 0 10px;text-transform:uppercase;}
+  .flow-box-inner{background:var(--paper);border:1px solid var(--paper-line);border-radius:8px;padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.9;word-break:break-word;}
+  .flow-box-inner .fname{font-weight:700;color:var(--ink);display:block;margin-bottom:6px;font-family:'Inter',sans-serif;font-size:14.5px;}
+  .flow-box-inner .fstep{color:var(--blue);font-weight:600;}
+  .flow-box-inner .fstep.fdone{color:var(--good);}
+  .flow-box-inner .fby{color:var(--blue);font-weight:600;}
+  .flow-box-inner .fby.fdone{color:var(--good);}
+  .flow-box-inner .farrow{color:var(--ink-soft);font-weight:700;padding:0 2px;}
+  .flow-box-inner .flink{color:var(--ink-soft);font-family:'Inter',sans-serif;font-size:12px;}
+  .flow-box-inner .fstatus{font-weight:700;font-size:11px;}
+  .flow-box-inner .fstatus-done{color:var(--good);}
+  .flow-box-inner .fstatus-pending{color:var(--blue);}
+  .flow-box-inner .fstatus-notknown{color:var(--wait);}
+
+  .status-row{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;}
+  .status-select{font-size:12.5px;padding:6px 8px;}
+  .step-body.status-notknown{border-left:3px solid var(--wait);}
+
+  .actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+
+  table.dash{width:100%;border-collapse:collapse;font-size:13px;}
+  table.dash th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);padding:8px 6px;border-bottom:1px solid var(--line);}
+  table.dash td{padding:10px 6px;border-bottom:1px solid var(--paper-line);vertical-align:top;cursor:pointer;}
+  table.dash tr:hover td{background:var(--paper);}
+  .task-id{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--blue);white-space:nowrap;}
+  .prog-pill{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:3px 8px;border-radius:12px;white-space:nowrap;}
+  .prog-pill.done{background:var(--good-soft);color:var(--good);}
+  .prog-pill.progress{background:var(--wait-soft);color:var(--wait);}
+  .prog-pill.notstarted{background:var(--paper);color:var(--ink-soft);border:1px solid var(--line);}
+
+  details{margin-top:22px;}
+  summary{cursor:pointer;font-size:13px;color:var(--ink-soft);padding:6px 0;}
+  textarea{width:100%;min-height:120px;font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--paper);color:var(--ink);}
+  .admin-row{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;align-items:center;}
+  .meta-note{font-size:12px;color:var(--ink-soft);margin-top:6px;}
+  .qr-row{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:10px;}
+  #qr-canvas-wrap{background:#fff;padding:8px;border-radius:8px;border:1px solid var(--line);}
+
+  .edit-steps{margin-top:16px;display:flex;flex-direction:column;gap:14px;}
+  .edit-step{background:var(--paper);border:1px solid var(--paper-line);border-radius:8px;padding:12px 14px;position:relative;}
+  .edit-step-label{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-soft);margin:0 0 8px;display:flex;justify-content:space-between;align-items:center;}
+  .edit-step-remove{color:#B3261E;cursor:pointer;font-size:12px;text-decoration:underline;}
+  .edit-step textarea{min-height:52px;font-family:'Inter',sans-serif;font-size:13.5px;margin-bottom:8px;}
+  .edit-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .edit-row select{flex:1;min-width:140px;}
+  .edit-field-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft);margin:0 0 3px;text-transform:uppercase;letter-spacing:.03em;}
+  .add-step-btn{margin-top:4px;}
+  .publish-row{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;align-items:center;}
+
+  footer{margin-top:30px;text-align:center;font-size:12px;color:var(--ink-soft);}
+
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .brand img{height:34px;width:auto;display:block;}
+
+  #gate-screen, #password-screen{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(180deg,#0B5D8F 0%,#083F62 100%);padding:20px;
+  }
+  .gate-card{background:#fff;border-radius:14px;padding:32px 28px;max-width:380px;width:100%;box-shadow:0 12px 32px rgba(0,0,0,0.25);text-align:center;}
+  .gate-card img{height:44px;width:auto;margin-bottom:18px;}
+  .gate-card h2{font-size:18px;margin:0 0 6px;}
+  .gate-card p{font-size:13.5px;color:var(--ink-soft);margin:0 0 18px;line-height:1.5;}
+  .gate-card input[type=email]{
+    width:100%;padding:12px 14px;font-size:15px;font-family:inherit;border:1px solid var(--line);
+    border-radius:8px;margin-bottom:10px;text-align:center;
+  }
+  .gate-card input[type=email]:focus{outline:2px solid var(--blue);outline-offset:1px;}
+  .gate-error{color:#B3261E;font-size:12.5px;margin-top:8px;min-height:16px;}
+  .gate-note{font-size:11px;color:#9AA7B2;margin-top:14px;line-height:1.5;}
+
+  .print-only-header{display:none;}
+  .print-steps{display:none;}
+
+  @media print{
+    @page{ size: A4; margin: 12mm; }
+    html, body{ background:#fff !important; height:auto !important; }
+    body *{ visibility:hidden; }
+    #pathway-panel, #pathway-panel *{ visibility:visible; }
+    #pathway-panel{
+      position:absolute; left:0; top:0; width:100%; margin:0; padding:0;
+      border:none; box-shadow:none; background:#fff;
+    }
+    #back-link, #edit-link, #delete-link, .publish-row, .edit-steps,
+    .actions, .copy-note, #stage-banner, .email-subject, .steps{ display:none !important; }
+
+    .print-only-header{
+      display:flex !important; align-items:flex-start; justify-content:space-between;
+      border-bottom:2px solid var(--blue); padding-bottom:8px; margin-bottom:10px;
+    }
+    .print-only-header img{ height:32px; width:auto; }
+    .print-only-title{ font-size:17px; font-weight:700; color:var(--ink); }
+    .print-only-sub{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--blue); letter-spacing:.04em; margin-top:2px; }
+
+    .pathway-head{ display:none; }
+
+    .print-steps{ display:block !important; }
+    .print-task-title{ font-size:14px; font-weight:700; color:var(--ink); margin-bottom:1px; }
+    .print-note{ font-size:9px; color:#8A99A6; font-style:italic; margin-bottom:9px; }
+    .print-step{ break-inside:avoid; page-break-inside:avoid; margin-bottom:0; }
+    .print-step-box{ border-radius:5px; padding:6px 10px; border:1px solid rgba(0,0,0,0.08); }
+    .print-step-top{ display:flex; justify-content:space-between; font-size:10.5px; font-weight:700; margin-bottom:3px; }
+    .print-step-desc{ font-size:11.5px; line-height:1.3; margin:0 0 3px; }
+    .print-step-by{ font-size:10px; font-weight:700; text-align:right; margin-bottom:2px; }
+    .print-step-float{ font-size:10px; font-weight:700; text-align:right; color:#0B5D8F; padding-top:2px; border-top:1px dashed rgba(0,0,0,0.12); }
+    .print-step-status{ font-size:9px; color:#51606E; text-align:right; margin-top:2px; font-style:italic; }
+    .print-arrow{ text-align:center; font-size:12px; color:#8A99A6; padding:1px 0; line-height:1; }
+  }
+</style>
+</head>
+<body>
+
+<div id="gate-screen">
+  <div class="gate-card">
+    <img src="data:image/jpeg;base64,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" alt="PS Group">
+    <h2>Site Approval Pathway</h2>
+    <p>Enter your PS Group email address to continue.</p>
+    <input type="email" id="gate-email" placeholder="you@psgroup.in" autocomplete="email">
+    <button class="btn-primary" id="gate-submit" style="width:100%;">Continue</button>
+    <div class="gate-error" id="gate-error"></div>
+    <p class="gate-note">Access is limited to @psgroup.in email addresses. This is a basic check, not a secure login — please don't forward this link outside the team.</p>
+  </div>
+</div>
+
+<div id="password-screen" style="display:none;">
+  <div class="gate-card">
+    <h2>Admin verification</h2>
+    <p>Enter the admin password to continue.</p>
+    <input type="password" id="admin-password" placeholder="Password" autocomplete="off">
+    <button class="btn-primary" id="password-submit" style="width:100%;">Continue</button>
+    <div class="gate-error" id="password-error"></div>
+    <p class="back-link" id="password-back" style="cursor:pointer;">&larr; back</p>
+  </div>
+</div>
+
+<div class="wrap" id="app-content" style="display:none;">
+  <header>
+    <div class="brand"><img src="data:image/jpeg;base64,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" alt="PS Group"></div>
+    <p class="kicker">PS Group — site WMS lookup</p>
+    <h1>Site Approval Pathway</h1>
+    <p class="sub">Pick the activity you're about to start. The path is fixed by QA-QC — you can't change it here, only mark your own step done once it's complete.</p>
+    <div class="tabs" id="tabs-bar"></div>
+  </header>
+
+  <div id="save-banner" style="display:none;background:#FCEEDA;border:1px solid #F0D9AE;border-radius:8px;padding:12px 14px;margin-bottom:16px;">
+    <p style="margin:0 0 8px;font-size:13.5px;color:#8A5A0F;font-weight:600;">⚠ Unsaved changes in this session</p>
+    <p class="meta-note" style="margin:0 0 10px;">This page keeps its own data — nothing is shared live between people. Download the updated file and replace the copy on OneDrive so the next person who opens it sees this change.</p>
+    <button class="btn-primary" id="save-banner-download">Download updated page</button>
+  </div>
+
+  <div class="panel" id="finder-panel">
+    <div class="admin-row" id="finder-save-row" style="display:none;margin-bottom:12px;">
+      <button class="btn-primary save-page-btn" data-status-target="finder-save-status">Save (download updated page)</button>
+      <span class="meta-note" id="finder-save-status"></span>
+    </div>
+
+    <div class="start-box" style="margin-top:0;margin-bottom:18px;">
+      <p class="meta-note" style="margin-top:0;">Already have a case number? Look it up directly.</p>
+      <div class="admin-row" style="margin-top:0;">
+        <input type="text" id="case-lookup-input" placeholder="Case number" style="flex:1;">
+        <button class="btn-primary" id="case-lookup-btn">Look up case</button>
+      </div>
+      <p class="meta-note" id="case-lookup-status"></p>
+    </div>
+
+    <p class="kicker" style="margin-bottom:8px;">Or find an activity to start a new case</p>
+    <div class="chips" id="dept-chips"></div>
+    <div class="search-row"><input type="text" id="search" placeholder="Search activity or WMS code…" autocomplete="off"></div>
+    <div class="results" id="results"></div>
+  </div>
+
+  <div class="panel" id="case-entry-panel" style="display:none;">
+    <div class="pathway-head">
+      <div>
+        <div class="pathway-title" id="case-entry-title"></div>
+        <div class="pathway-dept" id="case-entry-caseno">Case No.: (assigned on save)</div>
+      </div>
+      <div class="back-link" id="case-entry-back">&larr; back</div>
+    </div>
+    <p class="meta-note" style="margin-top:2px;">Fill in the case details, then save to get a case number and open the pathway.</p>
+
+    <p class="edit-field-label" style="margin-top:14px;">Specific subject</p>
+    <input type="text" id="case-subject" placeholder="e.g. Terrace waterproofing, Block C">
+
+    <p class="edit-field-label" style="margin-top:12px;">Project</p>
+    <input type="text" id="case-project" placeholder="Project name">
+
+    <p class="edit-field-label" style="margin-top:12px;">Location</p>
+    <input type="text" id="case-location" placeholder="e.g. Block C, 4th floor">
+
+    <div class="edit-row" style="margin-top:12px;">
+      <div style="flex:1;min-width:160px;">
+        <p class="edit-field-label">Date of commencement</p>
+        <input type="date" id="case-date-start">
+      </div>
+      <div style="flex:1;min-width:160px;">
+        <p class="edit-field-label">Date of completion</p>
+        <input type="date" id="case-date-end">
+      </div>
+      <div style="flex:1;min-width:160px;">
+        <p class="edit-field-label">Process status</p>
+        <select id="case-status">
+          <option value="In process" selected>In process</option>
+          <option value="Completed">Completed</option>
+          <option value="Discarded">Discarded</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="admin-row" style="margin-top:16px;">
+      <button class="btn-primary" id="case-entry-save">Save case &amp; open pathway</button>
+    </div>
+    <p class="meta-note" id="case-entry-status"></p>
+  </div>
+
+  <div class="panel" id="pathway-panel" style="display:none;">
+    <div class="print-only-header">
+      <div>
+        <div class="print-only-title">Site Approval Pathway</div>
+        <div class="print-only-sub">PS Group</div>
+      </div>
+      <img src="data:image/jpeg;base64,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" alt="PS Group">
+    </div>
+    <div class="pathway-head">
+      <div>
+        <div class="pathway-title" id="pw-title"></div>
+        <div class="pathway-dept" id="pw-dept"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+        <div class="back-link" id="back-link">&larr; back</div>
+        <div class="back-link" id="edit-link" style="display:none;">edit (admin)</div>
+        <div class="back-link" id="delete-link" style="display:none;color:#B3261E;">delete (admin)</div>
+      </div>
+    </div>
+    <div class="email-subject" id="email-subject"></div>
+
+    <div class="start-box" id="case-banner" style="display:none;background:#EAF2F8;border-color:#B9D6E8;">
+      <p class="kicker" style="margin-bottom:8px;">Case <span id="cb-caseno"></span></p>
+      <div class="edit-row">
+        <div style="flex:1;min-width:160px;">
+          <p class="edit-field-label">Specific subject</p>
+          <input type="text" id="cb-subject">
+        </div>
+        <div style="flex:1;min-width:160px;">
+          <p class="edit-field-label">Project</p>
+          <input type="text" id="cb-project">
+        </div>
+        <div style="flex:1;min-width:160px;">
+          <p class="edit-field-label">Location</p>
+          <input type="text" id="cb-location">
+        </div>
+      </div>
+      <div class="edit-row" style="margin-top:10px;">
+        <div style="flex:1;min-width:160px;">
+          <p class="edit-field-label">Date of commencement</p>
+          <input type="date" id="cb-date-start">
+        </div>
+        <div style="flex:1;min-width:160px;">
+          <p class="edit-field-label">Date of completion</p>
+          <input type="date" id="cb-date-end">
+        </div>
+        <div style="flex:1;min-width:160px;">
+          <p class="edit-field-label">Process status</p>
+          <select id="cb-status">
+            <option value="In process">In process</option>
+            <option value="Completed">Completed</option>
+            <option value="Discarded">Discarded</option>
+          </select>
+        </div>
+      </div>
+      <div class="admin-row" style="margin-top:12px;">
+        <button class="btn-primary" id="case-banner-save">Update case</button>
+        <span class="meta-note" id="case-banner-status"></span>
+      </div>
+    </div>
+
+    <div id="stage-banner"></div>
+    <div class="steps" id="steps"></div>
+    <div class="print-steps" id="print-steps"></div>
+    <div class="edit-steps" id="edit-steps" style="display:none;"></div>
+    <div class="publish-row" id="publish-row" style="display:none;">
+      <button class="btn-primary" id="publish-btn">Save &amp; publish</button>
+      <button class="btn-ghost" id="cancel-edit-btn">Cancel</button>
+      <span class="meta-note" id="publish-note"></span>
+    </div>
+
+    <div class="flow-box">
+      <p class="flow-box-label">Email-ready flow</p>
+      <div class="flow-box-inner" id="flow-preview"></div>
+    </div>
+    <div class="actions">
+      <button class="btn-primary" id="copy-btn">Copy for email</button>
+      <button class="btn-ghost" id="print-btn">Print A4</button>
+    </div>
+    <div class="copy-note" id="copy-note"></div>
+
+    <div class="start-box" style="margin-top:16px;">
+      <p class="meta-note" style="margin-top:0;"><b>Working from an emailed copy of this page?</b> After updating your step's status above, click "Save & attach to next email" — it downloads this file with your update saved inside it. Attach that downloaded file to your reply, forward it to the next department, and they'll see your status the moment they open it. If you opened this file as an email attachment (e.g. double-clicked it in Outlook), you can usually save the download straight back over that same attachment before forwarding.</p>
+      <button class="btn-primary save-page-btn" data-status-target="pathway-save-status">Save &amp; attach to next email</button>
+      <p class="meta-note" id="pathway-save-status"></p>
+    </div>
+  </div>
+
+  <div class="panel" id="dashboard-panel" style="display:none;">
+    <p class="meta-note" style="margin-top:0;">Every case, live from the case database. Click a row to open and update it.</p>
+    <div class="admin-row" style="margin-bottom:12px;">
+      <button class="btn-primary" id="dashboard-refresh-btn">Refresh</button>
+      <span class="meta-note" id="dashboard-status"></span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="dash" id="dash-table"></table>
+    </div>
+  </div>
+
+  <div class="panel" id="newentry-panel" style="display:none;">
+    <div class="start-box" style="margin-top:0;background:#EAF2F8;border-color:#B9D6E8;">
+      <p class="meta-note" style="margin-top:0;color:var(--ink);"><b>This page's data only lives in your browser until you save it.</b> After adding, editing, or deleting anything, click below to download a new copy of this file with your changes baked in — then replace index.html in your GitHub repo (same filename) so the next person to open the live link sees the update.</p>
+      <button class="btn-primary" id="export-page-btn">Download updated page</button>
+      <p class="meta-note" id="export-status"></p>
+    </div>
+
+    <div class="start-box" style="margin-top:16px;">
+      <p class="kicker" style="margin-bottom:8px;">Case Database (Google Sheet)</p>
+      <p class="meta-note" style="margin-top:0;">Paste the Apps Script Web App URL here so case entry, lookup, and the Master Dashboard can read/write live case data. Set this once, then download an updated page so it's baked in for everyone using the live link.</p>
+      <input type="text" id="case-api-input" placeholder="https://script.google.com/macros/s/.../exec">
+      <div class="admin-row"><button class="btn-primary" id="case-api-save">Save</button></div>
+      <p class="meta-note" id="case-api-status"></p>
+    </div>
+
+    <p class="kicker" style="margin-bottom:10px;margin-top:22px;">New entry — add to the process library</p>
+    <input type="text" id="new-proc-name" placeholder="Activity / WMS name" style="margin-bottom:8px;">
+    <input type="text" id="new-proc-dept" placeholder="Department (e.g. CIVIL, ELECTRICAL)" style="margin-bottom:14px;">
+    <div class="edit-steps" id="new-proc-steps"></div>
+    <div class="admin-row" style="margin-top:14px;">
+      <button class="btn-primary" id="new-proc-add">Save new process</button>
+      <button class="btn-ghost" id="new-proc-clear">Clear form</button>
+    </div>
+    <p class="meta-note" id="new-proc-status"></p>
+  </div>
+
+  <div class="panel" id="lists-panel" style="display:none;">
+    <div class="admin-row" style="margin-bottom:16px;">
+      <button class="btn-primary save-page-btn" data-status-target="lists-save-status">Save (download updated page)</button>
+      <span class="meta-note" id="lists-save-status"></span>
+    </div>
+    <p class="kicker" style="margin-bottom:10px;">Manage dropdown lists</p>
+    <p class="edit-field-label">Action types</p>
+    <div class="chips" id="action-types-chips" style="margin-bottom:8px;"></div>
+    <div class="admin-row" style="margin-top:0;">
+      <input type="text" id="new-action-type" placeholder="Add a new action type" style="flex:1;">
+      <button class="btn-ghost" id="add-action-type-btn">Add</button>
+    </div>
+
+    <p class="edit-field-label" style="margin-top:16px;">Departments (used for both "Action taken by" and "Float to")</p>
+    <div class="chips" id="dept-list-chips" style="margin-bottom:8px;"></div>
+    <div class="admin-row" style="margin-top:0;">
+      <input type="text" id="new-dept" placeholder="Add a new department" style="flex:1;">
+      <button class="btn-ghost" id="add-dept-btn">Add</button>
+    </div>
+    <p class="meta-note">Click a chip to remove it. New entries appear in the dropdowns immediately — remember to download an updated page afterwards so the list is saved.</p>
+  </div>
+
+  <footer>Path definitions come from the master approval-pathway sheet. Step status is marked by whoever completes the work.</footer>
+</div>
+
+
+<script>
+const DEFAULT_DATA = [{"sl":1,"dept":"GENERAL","name":"WATERPROOFING","steps":[{"material":"BOQ sent to QA-QC","action":"Sent to Responsible","by":"Contract","floatTo":"","status":"pending","updatedBy":"","updatedAt":""},{"material":"BOQ reviewed & scheme finalised","action":"Review","by":"QA-QC","floatTo":"","status":"pending","updatedBy":"","updatedAt":""},{"material":"Scheme & BOQ sent to Vendor for quotation & proposed methodology","action":"Sent to Responsible","by":"Vendor","floatTo":"","status":"pending","updatedBy":"","updatedAt":""},{"material":"Proposed methodology sent to QA-QC for review","action":"Sent to Responsible","by":"Vendor","floatTo":"","status":"pending","updatedBy":"","updatedAt":""},{"material":"Review & approval of proposed methodology","action":"Review & Approval","by":"QA-QC","floatTo":"","status":"pending","updatedBy":"","updatedAt":""},{"material":"Approved WMS released; execution proceeds","action":"Execution","by":"Site Execution","floatTo":"","status":"pending","updatedBy":"","updatedAt":""}],"_id":0},{"sl":2,"dept":"GENERAL","name":"ATT","steps":[{"material":"BOQ sent to QA-QC","action":"Sent to Responsible","by":"Contract","floatTo":"","status":"pending","updatedBy":"","updatedAt":""},{"material":"BOQ reviewed","action":"Review","by":"QA-QC","floatTo":"","status":"pending","updatedBy":"","updatedAt":""},{"material":"BOQ & scheme sent to Vendor for quotation & proposed methodology","action":"Sent to Responsible","by":"Vendor","floatTo":"","status":"pending","updatedBy":"","updatedAt":""},{"material":"Proposed methodology sent to QA-QC for review","action":"Sent to Responsible","by":"Vendor","floatTo":"","status":"pending","updatedBy":"","updatedAt":""},{"material":"Review & approval of proposed methodology","action":"Review & Approval","by":"QA-QC","floatTo":"","status":"pending","updatedBy":"","updatedAt":""},{"material":"Approved WMS released; execution proceeds","action":"Execution","by":"Site Execution","floatTo":"","status":"pending","updatedBy":"","updatedAt":""}],"_id":1},{"sl":3,"dept":"GENERAL","name":"Aluminium Windows","steps":[{"material":"BOQ sent to QA-QC","action":"Sent to Responsible","by":"Contract","floatTo":"","status":"pending","updatedBy":"","updatedAt":""}],"_id":2},{"sl":4,"dept":"GENERAL","name":"","steps":[],"_id":3},{"sl":5,"dept":"CIVIL","name":"CIV-WMS-001_Excavation, Backfilling.pdf","steps":[],"_id":4},{"sl":6,"dept":"CIVIL","name":"CIV-WMS-002_PCC.pdf","steps":[],"_id":5},{"sl":7,"dept":"CIVIL","name":"CIV-WMS-003_PILE & CAP.pdf","steps":[],"_id":6},{"sl":8,"dept":"CIVIL","name":"CIV-WMS-03A_Sheet Pile Work.pdf","steps":[],"_id":7},{"sl":9,"dept":"CIVIL","name":"CIV-WMS-004_VERTICAL LOAD TEST.pdf","steps":[],"_id":8},{"sl":10,"dept":"CIVIL","name":"CIV-WMS-005_REINFORCEMENT WORK.pdf","steps":[],"_id":9},{"sl":11,"dept":"CIVIL","name":"CIV-WMS-006_RAFT FOUNDATION.pdf","steps":[],"_id":10},{"sl":12,"dept":"CIVIL","name":"CIV-WMS-007_ANTI-TERMITE TREATMENT.pdf","steps":[],"_id":11},{"sl":13,"dept":"CIVIL","name":"CIV-WMS-008_RCC RW & SW.pdf","steps":[],"_id":12},{"sl":14,"dept":"CIVIL","name":"CIV-WMS-009_BASEMENT SCREED.pdf","steps":[],"_id":13},{"sl":15,"dept":"CIVIL","name":"CIV-WMS-009A_BASEMENT SCREED WITH GLASS STRIP.pdf","steps":[],"_id":14},{"sl":16,"dept":"CIVIL","name":"CIV-WMS-0010_ALU-FORM SHUTTERING.pdf","steps":[],"_id":15},{"sl":17,"dept":"CIVIL","name":"CIV-WMS-011_REBAR SPLICING.pdf","steps":[],"_id":16},{"sl":18,"dept":"CIVIL","name":"CIV-WMS-012_HONEYCOMB & CRACK REPAIR.pdf","steps":[],"_id":17},{"sl":19,"dept":"CIVIL","name":"CIV-WMS-013_TIE ROD HOLE CLOSING.pdf","steps":[],"_id":18},{"sl":20,"dept":"CIVIL","name":"CIV-WMS-014_CONSTRUCTION JOINT.pdf","steps":[],"_id":19},{"sl":21,"dept":"CIVIL","name":"CIV-WMS-015_AAC BLOCK WORK.pdf","steps":[],"_id":20},{"sl":22,"dept":"CIVIL","name":"CIV-WMS-015A_BRICK WORK.pdf","steps":[],"_id":21},{"sl":23,"dept":"CIVIL","name":"CIV-WMS-15B_HCB Masonry.pdf","steps":[],"_id":22},{"sl":24,"dept":"CIVIL","name":"CIV-WMS-016_CHASE CUTTING & FILLING.pdf","steps":[],"_id":23},{"sl":25,"dept":"CIVIL","name":"CIV-WMS-017_DOOR FRAMES.pdf","steps":[],"_id":24},{"sl":26,"dept":"CIVIL","name":"CIV-WMS-018_INTERNAL PLASTERING.pdf","steps":[],"_id":25},{"sl":27,"dept":"CIVIL","name":"CIV-WMS-019_EXTERNAL PLASTERING.pdf","steps":[],"_id":26},{"sl":28,"dept":"CIVIL","name":"CIV-WMS-020_TILE & NATURAL STONE Works_R-4.pdf","steps":[],"_id":27},{"sl":29,"dept":"CIVIL","name":"CIV-WMS-021_GRANITE ON RCC SURFACE.pdf","steps":[],"_id":28},{"sl":30,"dept":"CIVIL","name":"CIV-WMS-022_BW FOR LEDGE & REPAIR OF SLAB CUTOUTS.pdf","steps":[],"_id":29},{"sl":31,"dept":"CIVIL","name":"CIV-WMS-023_GYPSUM PLASTERING.pdf","steps":[],"_id":30},{"sl":32,"dept":"CIVIL","name":"CIV-WMS-024_PUTTY WORK.pdf","steps":[],"_id":31},{"sl":33,"dept":"CIVIL","name":"CIV-WMS-025_DOOR SHUTTERS.pdf","steps":[],"_id":32},{"sl":34,"dept":"CIVIL","name":"CIV-WMS-026_False Ceiling work-R-6.pdf","steps":[],"_id":33},{"sl":35,"dept":"CIVIL","name":"CIV-WMS-027_STRUCTURAL GLAZING WORK.pdf","steps":[],"_id":34},{"sl":36,"dept":"CIVIL","name":"CIV-WMS-028_INTERNAL PAINTING WORK.pdf","steps":[],"_id":35},{"sl":37,"dept":"CIVIL","name":"CIV-WMS-029_EXTERNAL PAINTING WORK.pdf","steps":[],"_id":36},{"sl":38,"dept":"CIVIL","name":"CIV-WMS-030_EPOXY FLOORING.pdf","steps":[],"_id":37},{"sl":39,"dept":"CIVIL","name":"CIV-WMS-031_ALUMINUM WINDOW & SLD.pdf","steps":[],"_id":38},{"sl":40,"dept":"CIVIL","name":"CIV-WMS-032_PAVER BLOCK & KERB.pdf","steps":[],"_id":39},{"sl":41,"dept":"CIVIL","name":"CIV-WMS-033_MARBLE WORK ON FCB.pdf","steps":[],"_id":40},{"sl":42,"dept":"CIVIL","name":"CIV-WMS-034_MARBLE WORK AT LIFT FACIA.pdf","steps":[],"_id":41},{"sl":43,"dept":"CIVIL","name":"CIV-WMS-035_MARBLE WORK ON AAC BLOCK.pdf","steps":[],"_id":42},{"sl":44,"dept":"CIVIL","name":"CIV-WMS-036_EXPANSION JOINT TREATMENT.pdf","steps":[],"_id":43},{"sl":45,"dept":"CIVIL","name":"CIV-WMS-037_AC LEDGE FIXING.pdf","steps":[],"_id":44},{"sl":46,"dept":"CIVIL","name":"CIV-WMS-038_SWIMMING POOL CONSTRUCTION.pdf","steps":[],"_id":45},{"sl":47,"dept":"CIVIL","name":"CIV-WMS-039_SWIMMING POOL TILE GROUT.pdf","steps":[],"_id":46},{"sl":48,"dept":"CIVIL","name":"CIV-WMS-040_SWIMMING POOL GLASS MOSAIC TILE.pdf","steps":[],"_id":47},{"sl":49,"dept":"CIVIL","name":"CIV-WMS-041_MCLP FOUNDATION.pdf","steps":[],"_id":48},{"sl":50,"dept":"CIVIL","name":"CIV-WMS-042_STRUCTURAL STEEL WORK.pdf","steps":[],"_id":49},{"sl":51,"dept":"CIVIL","name":"CIV-WMS-043_IN FILL WALL WORK.pdf","steps":[],"_id":50},{"sl":52,"dept":"CIVIL","name":"CIV-WMS-044_SPEED FLOOR WORK.pdf","steps":[],"_id":51},{"sl":53,"dept":"CIVIL","name":"CIV-WMS-045_PT SLAB WORK.pdf","steps":[],"_id":52},{"sl":54,"dept":"CIVIL","name":"CIV-WMS-046_PLASTER OVER T CRANE INSERT PLATE.pdf","steps":[],"_id":53},{"sl":55,"dept":"CIVIL","name":"CIV-WMS-047_VDF WORKS.pdf","steps":[],"_id":54},{"sl":56,"dept":"CIVIL","name":"CIV-WMS-048_VIBRO PILE.pdf","steps":[],"_id":55},{"sl":57,"dept":"CIVIL","name":"CIV-WMS-049_GLASS MIRROR FIXING.pdf","steps":[],"_id":56},{"sl":58,"dept":"CIVIL","name":"CIV-WMS-050_SPEED BREAKER INSTALLATION.pdf","steps":[],"_id":57},{"sl":59,"dept":"CIVIL","name":"CIV-WMS-051_Clay Tennis Court.pdf","steps":[],"_id":58},{"sl":60,"dept":"CIVIL","name":"CIV-WMS-052_Soil pit Construction.pdf","steps":[],"_id":59},{"sl":61,"dept":"ELECTRICAL","name":"ELEC-WMS-001_CONDUITING WORK.pdf","steps":[],"_id":60},{"sl":62,"dept":"ELECTRICAL","name":"ELEC-WMS-002_INTERNAL WIRING.pdf","steps":[],"_id":61},{"sl":63,"dept":"ELECTRICAL","name":"ELEC-WMS-003_SOLAR PANEL.pdf","steps":[],"_id":62},{"sl":64,"dept":"ELECTRICAL","name":"ELEC-WMS-004_Conduit Laying & GI Box Fixing.pdf","steps":[],"_id":63},{"sl":65,"dept":"ELECTRICAL","name":"ELEC-WMS-005_CABLE LAYING & TERMINATION.pdf","steps":[],"_id":64},{"sl":66,"dept":"ELECTRICAL","name":"ELEC-WMS-006_CABLE TRAY R-0.pdf","steps":[],"_id":65},{"sl":67,"dept":"ELECTRICAL","name":"ELEC-WMS-007_DB R-0.pdf","steps":[],"_id":66},{"sl":68,"dept":"ELECTRICAL","name":"ELEC-WMS-008_Earthing R-0.pdf","steps":[],"_id":67},{"sl":69,"dept":"ELECTRICAL","name":"ELEC-WMS-009_ LIGHT & POWER POINT INSTALLATION.pdf","steps":[],"_id":68},{"sl":70,"dept":"ELECTRICAL","name":"ELEC-WMS-010_ General Pumps .pdf","steps":[],"_id":69},{"sl":71,"dept":"FIRE","name":"FIR-WMS-001_ Pump installation  R-0.pdf","steps":[],"_id":70},{"sl":72,"dept":"FIRE","name":"FIR-WMS-002_ Pipe Welding R-0.pdf","steps":[],"_id":71},{"sl":73,"dept":"FIRE","name":"FIR-WMS-003_ MS Pipe Support Installation R-0.pdf","steps":[],"_id":72},{"sl":74,"dept":"FIRE","name":"FIR-WMS-004_ MS Pipe Errection & Jointing R-0.pdf","steps":[],"_id":73},{"sl":75,"dept":"FIRE","name":"FIR-WMS-005_MS Pipe Wrapping & Coating R-0.pdf","steps":[],"_id":74},{"sl":76,"dept":"FIRE","name":"FIR-WMS-006_ Pipe Hole & drilling R-0.pdf","steps":[],"_id":75},{"sl":77,"dept":"FIRE","name":"FIR-WMS-007_ MS Pipe Cleaning & Painting R-0.pdf","steps":[],"_id":76},{"sl":78,"dept":"FIRE","name":"FIR-WMS-008_Sprinkler Head R-0.pdf","steps":[],"_id":77},{"sl":79,"dept":"FIRE","name":"FIR-WMS-009_Riser  R-0.pdf","steps":[],"_id":78},{"sl":80,"dept":"PHE","name":"PHE-WMS-001_PLUMBING & DRAINAGE.pdf","steps":[],"_id":79},{"sl":81,"dept":"PHE","name":"PHE-WMS-002_LAYING HUME PIPES.pdf","steps":[],"_id":80},{"sl":82,"dept":"PHE","name":"PHE-WMS-003_LAYING DWC PIPES.pdf","steps":[],"_id":81},{"sl":83,"dept":"PHE","name":"PHE-WMS-004_General SOP for PHE.pdf","steps":[],"_id":82},{"_id":83,"sl":84,"dept":"Civil","name":"Aluminium Windows","steps":[{"material":"BOQ","action":"Sent to Responsible","by":"Contract","floatTo":"QA-QC","status":"pending","updatedBy":"","updatedAt":""}]}];
+const STORAGE_KEY = 'wms-pathways-v2';
+const SHELL_TEMPLATE = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>Site approval pathway</title>\n<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n<link href=\"https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">\n<style>\n  :root{\n    --paper:#EEF2F5; --paper-line:#D7DEE4; --card:#FFFFFF; --ink:#152331; --ink-soft:#51606E;\n    --blue:#0B5D8F; --blue-dark:#083F62; --amber:#D98A1D; --amber-soft:#FCEEDA;\n    --line:#C7D1D9; --good:#2F7A4F; --good-soft:#E4F3E9; --wait:#8A5A0F; --wait-soft:#FCEEDA;\n  }\n  *{box-sizing:border-box;}\n  body{\n    margin:0;font-family:'Inter',-apple-system,sans-serif;color:var(--ink);\n    background:linear-gradient(var(--paper-line) 1px, transparent 1px) 0 0/100% 28px, var(--paper);\n    min-height:100vh;padding:0 0 60px;\n  }\n  .wrap{max-width:680px;margin:0 auto;padding:0 18px;}\n  header{padding:28px 0 16px;}\n  .kicker{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.04em;color:var(--blue);margin:0 0 6px;}\n  h1{font-size:26px;line-height:1.25;margin:0 0 8px;font-weight:700;letter-spacing:-0.01em;}\n  .sub{color:var(--ink-soft);font-size:15px;line-height:1.55;margin:0;}\n\n  .tabs{display:flex;gap:6px;margin-top:20px;border-bottom:1px solid var(--line);}\n  .tab{font-family:'IBM Plex Mono',monospace;font-size:12.5px;padding:9px 14px;cursor:pointer;color:var(--ink-soft);border-bottom:2px solid transparent;}\n  .tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600;}\n\n  .panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:16px;}\n\n  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}\n  .chip{font-family:'IBM Plex Mono',monospace;font-size:12.5px;border:1px solid var(--line);background:var(--paper);color:var(--ink-soft);padding:6px 12px;border-radius:20px;cursor:pointer;user-select:none;transition:background .15s,color .15s,border-color .15s;}\n  .chip.active{background:var(--blue);border-color:var(--blue);color:#fff;}\n\n  input[type=text]{width:100%;padding:12px 14px;font-size:15px;font-family:inherit;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);}\n  input[type=text]:focus{outline:2px solid var(--blue);outline-offset:1px;background:#fff;}\n  select{font-family:inherit;font-size:13px;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);}\n\n  .results{margin-top:10px;max-height:340px;overflow-y:auto;border-top:1px solid var(--paper-line);}\n  .result{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid var(--paper-line);cursor:pointer;}\n  .result:hover{background:var(--paper);}\n  .result .name{font-size:14.5px;font-weight:500;}\n  .result .dept{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);white-space:nowrap;}\n  .empty-note{color:var(--ink-soft);font-size:13.5px;padding:14px 4px;}\n\n  .pathway-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:2px;}\n  .pathway-title{font-size:19px;font-weight:700;line-height:1.3;}\n  .pathway-dept{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--blue);margin-top:2px;}\n  .back-link{font-size:13px;color:var(--blue);cursor:pointer;text-decoration:underline;white-space:nowrap;padding-top:2px;}\n\n  .email-subject{margin-top:12px;background:var(--paper);border:1px dashed var(--line);border-radius:8px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink-soft);}\n  .email-subject b{color:var(--ink);}\n\n  .stage-banner{margin-top:14px;padding:10px 14px;border-radius:8px;font-size:13.5px;font-weight:600;}\n  .stage-banner.active{background:var(--wait-soft);color:var(--wait);}\n  .stage-banner.complete{background:var(--good-soft);color:var(--good);}\n\n  .steps{margin-top:16px;position:relative;}\n  .step{position:relative;padding-left:34px;padding-bottom:20px;}\n  .step:last-child{padding-bottom:2px;}\n  .step::before{content:'';position:absolute;left:11px;top:26px;bottom:-2px;width:2px;background:var(--line);}\n  .step:last-child::before{display:none;}\n  .step-num{position:absolute;left:0;top:0;width:24px;height:24px;border-radius:50%;background:var(--line);color:#fff;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;display:flex;align-items:center;justify-content:center;}\n  .step-num.done{background:var(--good);}\n  .step-num.current{background:var(--blue);}\n  .step-body{background:var(--paper);border:1px solid var(--paper-line);border-radius:8px;padding:12px 14px;}\n  .step-body.done{background:var(--good-soft);border-color:#C7E3D0;}\n  .step-body.current{border-color:var(--blue);}\n  .step-desc{font-size:14.5px;line-height:1.5;margin:0 0 8px;}\n  .step-tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}\n  .tag{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:3px 9px;border-radius:5px;}\n  .tag.action{background:var(--amber-soft);color:#8A5A0F;}\n  .tag.dept{background:#DCEBF4;color:var(--blue-dark);}\n  .tag.done{background:var(--good);color:#fff;}\n  .done-meta{font-size:11.5px;color:var(--good);margin-top:6px;}\n  .undo-link{font-size:11px;color:var(--ink-soft);text-decoration:underline;cursor:pointer;margin-left:8px;}\n  .mark-done-row{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}\n  .mark-done-row input[type=text]{flex:1;min-width:140px;padding:8px 10px;font-size:13px;}\n\n  .undefined{color:var(--ink-soft);font-style:italic;}\n\n  button{font-family:inherit;font-size:14px;font-weight:600;padding:11px 18px;border-radius:8px;border:1px solid transparent;cursor:pointer;transition:opacity .15s;}\n  button:active{opacity:.8;}\n  button.small{font-size:12.5px;padding:8px 12px;}\n  .btn-primary{background:var(--blue);color:#fff;}\n  .btn-ghost{background:transparent;border-color:var(--line);color:var(--ink);}\n  .copy-note{font-size:12.5px;color:var(--good);margin-top:8px;min-height:16px;}\n\n  .flow-box{margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 18px 16px;}\n  .flow-box-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;color:var(--ink-soft);margin:0 0 10px;text-transform:uppercase;}\n  .flow-box-inner{background:var(--paper);border:1px solid var(--paper-line);border-radius:8px;padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.9;word-break:break-word;}\n  .flow-box-inner .fname{font-weight:700;color:var(--ink);display:block;margin-bottom:6px;font-family:'Inter',sans-serif;font-size:14.5px;}\n  .flow-box-inner .fstep{color:var(--blue);font-weight:600;}\n  .flow-box-inner .fstep.fdone{color:var(--good);}\n  .flow-box-inner .fby{color:var(--blue);font-weight:600;}\n  .flow-box-inner .fby.fdone{color:var(--good);}\n  .flow-box-inner .farrow{color:var(--ink-soft);font-weight:700;padding:0 2px;}\n  .flow-box-inner .flink{color:var(--ink-soft);font-family:'Inter',sans-serif;font-size:12px;}\n  .flow-box-inner .fstatus{font-weight:700;font-size:11px;}\n  .flow-box-inner .fstatus-done{color:var(--good);}\n  .flow-box-inner .fstatus-pending{color:var(--blue);}\n  .flow-box-inner .fstatus-notknown{color:var(--wait);}\n\n  .status-row{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;}\n  .status-select{font-size:12.5px;padding:6px 8px;}\n  .step-body.status-notknown{border-left:3px solid var(--wait);}\n\n  .actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}\n\n  table.dash{width:100%;border-collapse:collapse;font-size:13px;}\n  table.dash th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);padding:8px 6px;border-bottom:1px solid var(--line);}\n  table.dash td{padding:10px 6px;border-bottom:1px solid var(--paper-line);vertical-align:top;cursor:pointer;}\n  table.dash tr:hover td{background:var(--paper);}\n  .task-id{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--blue);white-space:nowrap;}\n  .prog-pill{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:3px 8px;border-radius:12px;white-space:nowrap;}\n  .prog-pill.done{background:var(--good-soft);color:var(--good);}\n  .prog-pill.progress{background:var(--wait-soft);color:var(--wait);}\n  .prog-pill.notstarted{background:var(--paper);color:var(--ink-soft);border:1px solid var(--line);}\n\n  details{margin-top:22px;}\n  summary{cursor:pointer;font-size:13px;color:var(--ink-soft);padding:6px 0;}\n  textarea{width:100%;min-height:120px;font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--paper);color:var(--ink);}\n  .admin-row{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;align-items:center;}\n  .meta-note{font-size:12px;color:var(--ink-soft);margin-top:6px;}\n  .qr-row{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:10px;}\n  #qr-canvas-wrap{background:#fff;padding:8px;border-radius:8px;border:1px solid var(--line);}\n\n  .edit-steps{margin-top:16px;display:flex;flex-direction:column;gap:14px;}\n  .edit-step{background:var(--paper);border:1px solid var(--paper-line);border-radius:8px;padding:12px 14px;position:relative;}\n  .edit-step-label{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-soft);margin:0 0 8px;display:flex;justify-content:space-between;align-items:center;}\n  .edit-step-remove{color:#B3261E;cursor:pointer;font-size:12px;text-decoration:underline;}\n  .edit-step textarea{min-height:52px;font-family:'Inter',sans-serif;font-size:13.5px;margin-bottom:8px;}\n  .edit-row{display:flex;gap:8px;flex-wrap:wrap;}\n  .edit-row select{flex:1;min-width:140px;}\n  .edit-field-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft);margin:0 0 3px;text-transform:uppercase;letter-spacing:.03em;}\n  .add-step-btn{margin-top:4px;}\n  .publish-row{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;align-items:center;}\n\n  footer{margin-top:30px;text-align:center;font-size:12px;color:var(--ink-soft);}\n\n  .brand{display:flex;align-items:center;gap:10px;margin-bottom:14px;}\n  .brand img{height:34px;width:auto;display:block;}\n\n  #gate-screen, #password-screen{\n    min-height:100vh;display:flex;align-items:center;justify-content:center;\n    background:linear-gradient(180deg,#0B5D8F 0%,#083F62 100%);padding:20px;\n  }\n  .gate-card{background:#fff;border-radius:14px;padding:32px 28px;max-width:380px;width:100%;box-shadow:0 12px 32px rgba(0,0,0,0.25);text-align:center;}\n  .gate-card img{height:44px;width:auto;margin-bottom:18px;}\n  .gate-card h2{font-size:18px;margin:0 0 6px;}\n  .gate-card p{font-size:13.5px;color:var(--ink-soft);margin:0 0 18px;line-height:1.5;}\n  .gate-card input[type=email]{\n    width:100%;padding:12px 14px;font-size:15px;font-family:inherit;border:1px solid var(--line);\n    border-radius:8px;margin-bottom:10px;text-align:center;\n  }\n  .gate-card input[type=email]:focus{outline:2px solid var(--blue);outline-offset:1px;}\n  .gate-error{color:#B3261E;font-size:12.5px;margin-top:8px;min-height:16px;}\n  .gate-note{font-size:11px;color:#9AA7B2;margin-top:14px;line-height:1.5;}\n\n  .print-only-header{display:none;}\n  .print-steps{display:none;}\n\n  @media print{\n    @page{ size: A4; margin: 12mm; }\n    html, body{ background:#fff !important; height:auto !important; }\n    body *{ visibility:hidden; }\n    #pathway-panel, #pathway-panel *{ visibility:visible; }\n    #pathway-panel{\n      position:absolute; left:0; top:0; width:100%; margin:0; padding:0;\n      border:none; box-shadow:none; background:#fff;\n    }\n    #back-link, #edit-link, #delete-link, .publish-row, .edit-steps,\n    .actions, .copy-note, #stage-banner, .email-subject, .steps{ display:none !important; }\n\n    .print-only-header{\n      display:flex !important; align-items:flex-start; justify-content:space-between;\n      border-bottom:2px solid var(--blue); padding-bottom:8px; margin-bottom:10px;\n    }\n    .print-only-header img{ height:32px; width:auto; }\n    .print-only-title{ font-size:17px; font-weight:700; color:var(--ink); }\n    .print-only-sub{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--blue); letter-spacing:.04em; margin-top:2px; }\n\n    .pathway-head{ display:none; }\n\n    .print-steps{ display:block !important; }\n    .print-task-title{ font-size:14px; font-weight:700; color:var(--ink); margin-bottom:1px; }\n    .print-note{ font-size:9px; color:#8A99A6; font-style:italic; margin-bottom:9px; }\n    .print-step{ break-inside:avoid; page-break-inside:avoid; margin-bottom:0; }\n    .print-step-box{ border-radius:5px; padding:6px 10px; border:1px solid rgba(0,0,0,0.08); }\n    .print-step-top{ display:flex; justify-content:space-between; font-size:10.5px; font-weight:700; margin-bottom:3px; }\n    .print-step-desc{ font-size:11.5px; line-height:1.3; margin:0 0 3px; }\n    .print-step-by{ font-size:10px; font-weight:700; text-align:right; margin-bottom:2px; }\n    .print-step-float{ font-size:10px; font-weight:700; text-align:right; color:#0B5D8F; padding-top:2px; border-top:1px dashed rgba(0,0,0,0.12); }\n    .print-step-status{ font-size:9px; color:#51606E; text-align:right; margin-top:2px; font-style:italic; }\n    .print-arrow{ text-align:center; font-size:12px; color:#8A99A6; padding:1px 0; line-height:1; }\n  }\n</style>\n</head>\n<body>\n\n<div id=\"gate-screen\">\n  <div class=\"gate-card\">\n    <img src=\"data:image/jpeg;base64,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\" alt=\"PS Group\">\n    <h2>Site Approval Pathway</h2>\n    <p>Enter your PS Group email address to continue.</p>\n    <input type=\"email\" id=\"gate-email\" placeholder=\"you@psgroup.in\" autocomplete=\"email\">\n    <button class=\"btn-primary\" id=\"gate-submit\" style=\"width:100%;\">Continue</button>\n    <div class=\"gate-error\" id=\"gate-error\"></div>\n    <p class=\"gate-note\">Access is limited to @psgroup.in email addresses. This is a basic check, not a secure login — please don't forward this link outside the team.</p>\n  </div>\n</div>\n\n<div id=\"password-screen\" style=\"display:none;\">\n  <div class=\"gate-card\">\n    <h2>Admin verification</h2>\n    <p>Enter the admin password to continue.</p>\n    <input type=\"password\" id=\"admin-password\" placeholder=\"Password\" autocomplete=\"off\">\n    <button class=\"btn-primary\" id=\"password-submit\" style=\"width:100%;\">Continue</button>\n    <div class=\"gate-error\" id=\"password-error\"></div>\n    <p class=\"back-link\" id=\"password-back\" style=\"cursor:pointer;\">&larr; back</p>\n  </div>\n</div>\n\n<div class=\"wrap\" id=\"app-content\" style=\"display:none;\">\n  <header>\n    <div class=\"brand\"><img src=\"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCABRAScDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD5b+1Sf89JKT7VJ/z0k/7+UUyv2s+HH/apP+ekn/fyj7VJ/wA9JP8Av5TKKAH/AGqT/npJ/wB/KPtUn/PST/v5TKKAH/apP+ekn/fyj7VJ/wA9JP8Av5TKKAH/AGqT/npJ/wB/KPtUn/PST/v5TKKAH/apP+ekn/fyj7VJ/wA9JP8Av5TKKAH/AGqT/npJ/wB/KPtUn/PST/v5TKKAH/apP+ekn/fyj7VJ/wA9JP8Av5TKKQD/ALVJ/wA9JP8Av5R9qk/56Sf9/KI7WSWPzP8AlnH/AMtaJZY4v3cdR7Sn8FM6fYVKcOeoH2qT/npJ/wB/KPtUn/PST/v5TKK0OYf9qk/56Sf9/KPtUn/PST/v5TKKAH/apP8AnpJ/38o+1Sf89JP+/lMooAf9qk/56Sf9/KPtUn/PST/v5TKKAH/apP8AnpJ/38o+1Sf89JP+/lMooAf9qk/56Sf9/KPtUn/PST/v5TKKAH/apP8AnpJ/38o+1Sf89JP+/lMooAf9qk/56Sf9/KPtUn/PST/v5TKKAH/apP8AnpJ/38o+1Sf89JP+/lMooAf9qn/56SUUUU+QPaDKKKfFayXUkccEcksn/PKOPzJKkBlFXP7B1L/oG3//AIByVHc2F3YR+Zd2k9tH/wA9JI5I6x9tS7j9kyvRRRWwgorV8P8AhLXvFskkei6Lqer+X/rP7Ns5Ljy/+/dSa/4N8Q+EvL/t3QtT0jzP9X9ts5Lf/wBGVj7Wn3H7JmNRRRW4gooooAKKKfHFJLJ5cf72SsKlaNFe0qm9GjVr1FSpK9xlaFtYRxW/2u7/AHUf/PL/AJaSVZisINGj8+7/AHtz/wAs46zrm6kv7jzJK8KWLqZj7mH/AIf83/yJ9y8soZJT58V+8rv7P8vr/kFzdSXX/TKP/lnHHVen0yvXpuhh4ckZHyleGMxdT2koO3o/8goop9taz33meRBPc+X/AM8o/Mrq5o8vNc8yUZRlyyQyirn9g6l/0Db/AP8AAeSo7mwu7CPzLu0nto/+msfl1n7al3C0ivRRRWxIUUVux+A/FN1Z/a4/DWtS2X/PzHp9x5f/AKLrL20V1KtIwqKT/VSSRyf6yP8A1lLWkZc2xIUVYisLu6j8yC0uLmP/AJ6xW/mVFJFJFJ5ckckUlPmQDKKsW1hd3/8Ax6Wlxc/9c4/MqKSKSKTy5I5IpP8AnnJS5kAyirltpd/dR+ZBYXcsf/PWK3kko/sHU4v+Ybf/APgPJWXto9x+yZTop8kXlSeXJ+6k/wCmtMrZSUthD6KZRWkdjIK+gP2Df+TpfCP/AFzvP/SeSvn+voD9gv8A5Om8If8AXO9/9J5K8vMf9yqnVh/4lM/QX4/ftReGP2d7nRbfxBp2rXz6okrwf2bFHIY/L8vO/fIMf6zrXD+Af28Phh8VPFGneFW0rW7O51aYWdv/AGlZxSQTSv8A8s8xySV2/wAffAXwb8ZXmjH4qXOlRXFvHL9gOo6xJp52fu/Mxslj38+XXlen+E/2SfhVrVl4nsdS8PRajp8n2i3mj1+fUJI5P+ufmyfyr8+oRo1KGkJc/wCB9DU5vaHkX/BQT9nHQvh9baT448MWMOkwX939j1Cztx5dv5nl+ZHJHGOIz+7kr5d+D/gWP4m/FTwt4VnnktrfU7+O3uJIv9Z5f/LT/wAh17V+2T+1dB8eLqz8PeG0nj8I6fJ9o82SPy5Ly47Sf9M44x5nP/TSvCfhza+K7rxtp114KtL6+8TafJ9stP7Ot/tEkfl/8tPLr7DBQxFPAv2jtueRW9n9Y9w/TH4zftFeDP2N9M8OeE7DwteXPm2X+h2diI44BHGRH88v9/iovgn+2B4H/ab1K78Hal4ck068uIJHOnasI7iC4jT/AFntx9K8/tf239DsrePwl8bPh9fabrVvbx/bRNaR3kcsnl/6zyP+We/nH1roPB/gP9k/496kYdA03SP7af8AefYbC4uNLuf+/cckdfJqkoUr1YSv/MetzqUvdPkP9sn4O6J8Hfi59g8OvGND1Kz/ALQgt438z7LJ5knmR/5/56V4VX0F+2B+zVb/ALPni7Tn0m7e58N64JDaLcNmS3kj/wBZH9P3kdfPtffZfU9rhqfv3PExFP8AeBRRW7pvh3zf3l3/AN+qwzHNsLlkeatue7kfDuOz6t7PDw0MqxsZL+Ty4/8Av5W9LLaeHI/3f725qPUtUjsI/slh5dYEsvmyeZ5nmyV8vTpYvPqvtcT7lH+X+Y+9xFfLeEKTw2DXtMV/N9mP+EJbqS6kkkkk82Strwr/AK25rCq5ZapPYeZ5f/LSvezbASrZbLCYLQ+V4bzmODzuOZZl+8OjudUtLW48uSTypaLbVLS6uI445PNlrmLm6kv7jzJP9ZVjQf8AkKR18LX4Vp4fATr1KsueMe5+sYDxCr43OqeDp0YexnLsvh+4u+KP+Xevr3/gl1/yP/jz/sGW3/o2SvkLxR/y719e/wDBLr/kf/Hn/YMtv/RslellrlLhyN/61PguNqcKXFFZR2/4B778av24PC/wR+IN34Q1Pw3q+pXsEUdwbix8gR/vP+ukgqD4W/ttfD/46eJ7fwX/AGLqen32qB4rddTgjkt5/wB35hTKSHtVD4+L+zDL8UL1PiabceMPs9v57TPqH+r/AOWX+r/d16D8NfgP8KPAqR+M/APhexubn7JJJaX1ldvcSSg9o5JJD9+ufmwsMOm4S5+/Q+Q972h8Y/t/fADQ/hbr2jeKPDNpHp2na35lveadF+7jjuI/+Wkf/PPzP/adfKem2F3rOp21haQSXN7cSR29vHH/AMtJJP8AV17R+1T+0F4k+OXjI2ms6VJ4csNFkkgh0Kb/AFsMv/LTzJP+elZn7IpsJP2lfh4b7/j2/tD935n/AD08uTy//Ilfa4R1MNl3tKnxHk1I06mI90+6vhj+z78Of2Rvh6/i7xm1re6zbxRy3+tXsXmCGT/nnbp/yzH0rlbn/gqB4Ni1b7PB4O1yXTxJ5f2otHG+f+uf/wBeo/8AgqFNfR+AfBEce/8As2TV3+0f3PM8v93n/wAiV+c3/fuvDy/ARzGLrYiR2V6/1efJA/VXX/h38J/23Ph4+vaMkEGoHfHFqsEAjvbOfoY5+/pmM1+YXjDwfqXgDxdqvhvVUjj1HTLiS3uI4v8AVV9nf8EupL4+IPiCmJI9J+z2fmRf8s/tH7z/ANp15d/wUKNgf2mdVNps83+z7P7Zn/np5f8A8b8uunL5zw2Mng73gZ4iPtKPtj6q/wCCag/4x7vf+w9c/wDouKvzv+L3/JXPHP8A2HNR/wDSiSv0R/4Jqf8AJvd7/wBh65/9FxV+d3xfiki+LnjjzI/+Y5qP/pRJV5X/AL/XFiP93pn1X/wS7iEnjbx5/wBg+2/9GSV8/ftY/wDJyvxD/wCwn/7Tjr6B/wCCWv8AyO3jz/sH23/oySvn79rKXzf2lviL/wBhT/2nHWuH/wCRrU9CKn+7QP0P/YFO39l3wxkf8tLz/wBKJK4m4/4KZfDezvZYH8P+JPMjk8v/AI94P/jtdv8A8E/z/wAYu+GB/wBN7z/0pkrjLn4Gfsima48+88NB9/7zPi+fr/4E18tN0niqvtot69D0ve9nT5DudFn+FP7bXw6vL5NK+22qSG0lluLZIL21k9n7V+WPj7wbP8P/AB3r3he6k+1XGj6hJZyS/wDPTy/+WlfoZe/tI/Aj9lnwTf6V8OZLPVbxpDOumaTcS3PnTn/npcOZB+b1+c3ibxNe+NPE2qa/qkwuNU1OeS8ncDAEklfRZHCtGc3r7PzODGez/wC3zLooor69bHhhXv37Bbbf2pfCJ/6Z3n/pPJXgNPt7q4sLjz7S4ktpP+esUnlyVx4qi8TSqUkdVOp7Op7Q+5/+Cpjbta+HX/XvqH/oy3r4Vqxe6pf6p5f2+/u77y/9X9puJJKr1jgcK8Hh/ZvVmuIqe0n7QK9K/Z2+LX/Ckvi5o/ip4HubOPzLe/jQZkeCT75jHsa81orqq01WpOlUOWnU9m7n6s/FH9m34Y/tcWeneMbDVZLe8uLSLy9W0qRH8yLqiSJznrWb8J/2HfAXwD8UW3jbUPEl3qVzpf7y3l1KSOC3tj5fl7/y96/MTTdYv9G8z+zb+7sfM/59riSOpNS8SatrMfl6lq1/qcf/AE83kklfN/2RiOX2ca/7s9P65T+PkPpP9u79oPR/jF4x0XQvDs8d7o/h/wA3/iZRHMdxPIY9/l/7EYj5r5ftrWS6k8uBPNkplP8ANki/1cle1Twv1bDeyoEUalOpiPaYj4Dp9N0GOw/eSfvbmtK4i86Py/Mki/65Vw32uT/nvJS+Y/8Az0kr86xfCOOxtf29bE+8fvWWeJOU5VhfqmFwPu/4jov+EXtP+mn/AH8qT/hG7T/ppXM/apP+eklHmP8A89JK648O5zHbGnlS404cnLmllh0X/CN2n/TT/v5R/wAI3af9NP8Av5XO+Y//AD0ko8x/+eklbf2DnP8A0Gkf65cN/wDQsOi/4Ru0/wCmn/fyrNtoMFrceZH5lcp5j/8APSSj7VJ/z0krKpw5muIp+zqYo68Pxzw9hqkMRSy/3zZ8Uf8ALt/20r68/wCCXu3/AITvx3n/AKBlt/6Nkr4lllkl/wBZJJLVmx1S/wBLkkksLu4sZJP9Z9mk8uvo8NlEqGW/Uuc/MeIM9p5tms8x5PiPoT/goI279pzWv+wfZ/8Aouuk/YT/AGnP+FY+JovAfiO7P/CLatJ5dnJJ/q7G4/8AjclfK9zfz38nmXc89zc/89bmTzJKr16Cy6nLBLD1Nz5v6x+89ofol+35+zGPEmmSfEnwxamTWrNMatbRj/j4tv8An4/66R/+i/8ArmK/PnTdUu9G1Cy1Kwn+y3tncR3FvJ/zzkjqx/wluu/6v+3dX/8ABhJWXVYHC1MPT9lUnzImtU56ntKZ+pvw1+Nnw4/bK+HD+FPFcVpHrFxH5WoaDcyeXLvx/rIM8n8K4O6/4JgeH5L+SW38eaulkXyIXtIpJU/7adP/AByvzt/1X7yP91JXRx/EbxhFZ/ZI/FmvRW3/ADz/ALUuPL/9GV5n9kYii28LV5Uzq+t06n8SB+neseKPhT+w98M5NLsn8u8/16abHN5mo6jOQP3j/wCJwlfl/wCO/GWp/EbxprXiTVpI5dR1S8kuJPL/ANXH/wBM/wDtn/q6xbm6kuriSeeSSW5k/wBZLLJ5klMr0MBl/wBTvVl782c1fEe00R9nf8E+P2gtF8AT6t4H8S30GlWepzm80+6uZPLiNx/q5Y9/RP8AlnXtXxY/4J9+EPih40vvFFjr1/oFxqkhubyCKOO4ikkf/lomelfmPW7pHjzxRoNv5Gm+Jda0y2/55W2oSRx/+jK5a2V1PrDxGHnyXNqeL/d+zqH6mfDH4T/Dz9i/wPq9/ea8YvtnlyXmratJHHJOYwdkcafpsFflf4y8UXfjbxhrXiG+/wCP3VLy4vJP+mfmSVS1bWdS1648zUtSu9Tk/wCel9cSSSf+RKp104DAfV6k6tSfNMyxGI9p+7gfrR+wNIIP2XfDX/Xa8/8ASmSvyf1eL/icXv8A18Sf+jKsWPiPVrC38i01a/trb/nlbXkkcdZ9Tg8veHxFSrP7Yq2I56cKYUUUV7XLynKFFFFUtjIKKKKRqFFFFABRRRQAUUUUgCiiimAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFIAooopgFFFFAD6KKKa2MhlFFFI1CiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKa2Mj//2Q==\" alt=\"PS Group\"></div>\n    <p class=\"kicker\">PS Group — site WMS lookup</p>\n    <h1>Site Approval Pathway</h1>\n    <p class=\"sub\">Pick the activity you're about to start. The path is fixed by QA-QC — you can't change it here, only mark your own step done once it's complete.</p>\n    <div class=\"tabs\" id=\"tabs-bar\"></div>\n  </header>\n\n  <div id=\"save-banner\" style=\"display:none;background:#FCEEDA;border:1px solid #F0D9AE;border-radius:8px;padding:12px 14px;margin-bottom:16px;\">\n    <p style=\"margin:0 0 8px;font-size:13.5px;color:#8A5A0F;font-weight:600;\">⚠ Unsaved changes in this session</p>\n    <p class=\"meta-note\" style=\"margin:0 0 10px;\">This page keeps its own data — nothing is shared live between people. Download the updated file and replace the copy on OneDrive so the next person who opens it sees this change.</p>\n    <button class=\"btn-primary\" id=\"save-banner-download\">Download updated page</button>\n  </div>\n\n  <div class=\"panel\" id=\"finder-panel\">\n    <div class=\"admin-row\" id=\"finder-save-row\" style=\"display:none;margin-bottom:12px;\">\n      <button class=\"btn-primary save-page-btn\" data-status-target=\"finder-save-status\">Save (download updated page)</button>\n      <span class=\"meta-note\" id=\"finder-save-status\"></span>\n    </div>\n\n    <div class=\"start-box\" style=\"margin-top:0;margin-bottom:18px;\">\n      <p class=\"meta-note\" style=\"margin-top:0;\">Already have a case number? Look it up directly.</p>\n      <div class=\"admin-row\" style=\"margin-top:0;\">\n        <input type=\"text\" id=\"case-lookup-input\" placeholder=\"Case number\" style=\"flex:1;\">\n        <button class=\"btn-primary\" id=\"case-lookup-btn\">Look up case</button>\n      </div>\n      <p class=\"meta-note\" id=\"case-lookup-status\"></p>\n    </div>\n\n    <p class=\"kicker\" style=\"margin-bottom:8px;\">Or find an activity to start a new case</p>\n    <div class=\"chips\" id=\"dept-chips\"></div>\n    <div class=\"search-row\"><input type=\"text\" id=\"search\" placeholder=\"Search activity or WMS code…\" autocomplete=\"off\"></div>\n    <div class=\"results\" id=\"results\"></div>\n  </div>\n\n  <div class=\"panel\" id=\"case-entry-panel\" style=\"display:none;\">\n    <div class=\"pathway-head\">\n      <div>\n        <div class=\"pathway-title\" id=\"case-entry-title\"></div>\n        <div class=\"pathway-dept\" id=\"case-entry-caseno\">Case No.: (assigned on save)</div>\n      </div>\n      <div class=\"back-link\" id=\"case-entry-back\">&larr; back</div>\n    </div>\n    <p class=\"meta-note\" style=\"margin-top:2px;\">Fill in the case details, then save to get a case number and open the pathway.</p>\n\n    <p class=\"edit-field-label\" style=\"margin-top:14px;\">Specific subject</p>\n    <input type=\"text\" id=\"case-subject\" placeholder=\"e.g. Terrace waterproofing, Block C\">\n\n    <p class=\"edit-field-label\" style=\"margin-top:12px;\">Project</p>\n    <input type=\"text\" id=\"case-project\" placeholder=\"Project name\">\n\n    <p class=\"edit-field-label\" style=\"margin-top:12px;\">Location</p>\n    <input type=\"text\" id=\"case-location\" placeholder=\"e.g. Block C, 4th floor\">\n\n    <div class=\"edit-row\" style=\"margin-top:12px;\">\n      <div style=\"flex:1;min-width:160px;\">\n        <p class=\"edit-field-label\">Date of commencement</p>\n        <input type=\"date\" id=\"case-date-start\">\n      </div>\n      <div style=\"flex:1;min-width:160px;\">\n        <p class=\"edit-field-label\">Date of completion</p>\n        <input type=\"date\" id=\"case-date-end\">\n      </div>\n      <div style=\"flex:1;min-width:160px;\">\n        <p class=\"edit-field-label\">Process status</p>\n        <select id=\"case-status\">\n          <option value=\"In process\" selected>In process</option>\n          <option value=\"Completed\">Completed</option>\n          <option value=\"Discarded\">Discarded</option>\n        </select>\n      </div>\n    </div>\n\n    <div class=\"admin-row\" style=\"margin-top:16px;\">\n      <button class=\"btn-primary\" id=\"case-entry-save\">Save case &amp; open pathway</button>\n    </div>\n    <p class=\"meta-note\" id=\"case-entry-status\"></p>\n  </div>\n\n  <div class=\"panel\" id=\"pathway-panel\" style=\"display:none;\">\n    <div class=\"print-only-header\">\n      <div>\n        <div class=\"print-only-title\">Site Approval Pathway</div>\n        <div class=\"print-only-sub\">PS Group</div>\n      </div>\n      <img src=\"data:image/jpeg;base64,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\" alt=\"PS Group\">\n    </div>\n    <div class=\"pathway-head\">\n      <div>\n        <div class=\"pathway-title\" id=\"pw-title\"></div>\n        <div class=\"pathway-dept\" id=\"pw-dept\"></div>\n      </div>\n      <div style=\"display:flex;flex-direction:column;align-items:flex-end;gap:4px;\">\n        <div class=\"back-link\" id=\"back-link\">&larr; back</div>\n        <div class=\"back-link\" id=\"edit-link\" style=\"display:none;\">edit (admin)</div>\n        <div class=\"back-link\" id=\"delete-link\" style=\"display:none;color:#B3261E;\">delete (admin)</div>\n      </div>\n    </div>\n    <div class=\"email-subject\" id=\"email-subject\"></div>\n\n    <div class=\"start-box\" id=\"case-banner\" style=\"display:none;background:#EAF2F8;border-color:#B9D6E8;\">\n      <p class=\"kicker\" style=\"margin-bottom:8px;\">Case <span id=\"cb-caseno\"></span></p>\n      <div class=\"edit-row\">\n        <div style=\"flex:1;min-width:160px;\">\n          <p class=\"edit-field-label\">Specific subject</p>\n          <input type=\"text\" id=\"cb-subject\">\n        </div>\n        <div style=\"flex:1;min-width:160px;\">\n          <p class=\"edit-field-label\">Project</p>\n          <input type=\"text\" id=\"cb-project\">\n        </div>\n        <div style=\"flex:1;min-width:160px;\">\n          <p class=\"edit-field-label\">Location</p>\n          <input type=\"text\" id=\"cb-location\">\n        </div>\n      </div>\n      <div class=\"edit-row\" style=\"margin-top:10px;\">\n        <div style=\"flex:1;min-width:160px;\">\n          <p class=\"edit-field-label\">Date of commencement</p>\n          <input type=\"date\" id=\"cb-date-start\">\n        </div>\n        <div style=\"flex:1;min-width:160px;\">\n          <p class=\"edit-field-label\">Date of completion</p>\n          <input type=\"date\" id=\"cb-date-end\">\n        </div>\n        <div style=\"flex:1;min-width:160px;\">\n          <p class=\"edit-field-label\">Process status</p>\n          <select id=\"cb-status\">\n            <option value=\"In process\">In process</option>\n            <option value=\"Completed\">Completed</option>\n            <option value=\"Discarded\">Discarded</option>\n          </select>\n        </div>\n      </div>\n      <div class=\"admin-row\" style=\"margin-top:12px;\">\n        <button class=\"btn-primary\" id=\"case-banner-save\">Update case</button>\n        <span class=\"meta-note\" id=\"case-banner-status\"></span>\n      </div>\n    </div>\n\n    <div id=\"stage-banner\"></div>\n    <div class=\"steps\" id=\"steps\"></div>\n    <div class=\"print-steps\" id=\"print-steps\"></div>\n    <div class=\"edit-steps\" id=\"edit-steps\" style=\"display:none;\"></div>\n    <div class=\"publish-row\" id=\"publish-row\" style=\"display:none;\">\n      <button class=\"btn-primary\" id=\"publish-btn\">Save &amp; publish</button>\n      <button class=\"btn-ghost\" id=\"cancel-edit-btn\">Cancel</button>\n      <span class=\"meta-note\" id=\"publish-note\"></span>\n    </div>\n\n    <div class=\"flow-box\">\n      <p class=\"flow-box-label\">Email-ready flow</p>\n      <div class=\"flow-box-inner\" id=\"flow-preview\"></div>\n    </div>\n    <div class=\"actions\">\n      <button class=\"btn-primary\" id=\"copy-btn\">Copy for email</button>\n      <button class=\"btn-ghost\" id=\"print-btn\">Print A4</button>\n    </div>\n    <div class=\"copy-note\" id=\"copy-note\"></div>\n\n    <div class=\"start-box\" style=\"margin-top:16px;\">\n      <p class=\"meta-note\" style=\"margin-top:0;\"><b>Working from an emailed copy of this page?</b> After updating your step's status above, click \"Save & attach to next email\" — it downloads this file with your update saved inside it. Attach that downloaded file to your reply, forward it to the next department, and they'll see your status the moment they open it. If you opened this file as an email attachment (e.g. double-clicked it in Outlook), you can usually save the download straight back over that same attachment before forwarding.</p>\n      <button class=\"btn-primary save-page-btn\" data-status-target=\"pathway-save-status\">Save &amp; attach to next email</button>\n      <p class=\"meta-note\" id=\"pathway-save-status\"></p>\n    </div>\n  </div>\n\n  <div class=\"panel\" id=\"dashboard-panel\" style=\"display:none;\">\n    <p class=\"meta-note\" style=\"margin-top:0;\">Every case, live from the case database. Click a row to open and update it.</p>\n    <div class=\"admin-row\" style=\"margin-bottom:12px;\">\n      <button class=\"btn-primary\" id=\"dashboard-refresh-btn\">Refresh</button>\n      <span class=\"meta-note\" id=\"dashboard-status\"></span>\n    </div>\n    <div style=\"overflow-x:auto;\">\n      <table class=\"dash\" id=\"dash-table\"></table>\n    </div>\n  </div>\n\n  <div class=\"panel\" id=\"newentry-panel\" style=\"display:none;\">\n    <div class=\"start-box\" style=\"margin-top:0;background:#EAF2F8;border-color:#B9D6E8;\">\n      <p class=\"meta-note\" style=\"margin-top:0;color:var(--ink);\"><b>This page's data only lives in your browser until you save it.</b> After adding, editing, or deleting anything, click below to download a new copy of this file with your changes baked in — then replace index.html in your GitHub repo (same filename) so the next person to open the live link sees the update.</p>\n      <button class=\"btn-primary\" id=\"export-page-btn\">Download updated page</button>\n      <p class=\"meta-note\" id=\"export-status\"></p>\n    </div>\n\n    <div class=\"start-box\" style=\"margin-top:16px;\">\n      <p class=\"kicker\" style=\"margin-bottom:8px;\">Case Database (Google Sheet)</p>\n      <p class=\"meta-note\" style=\"margin-top:0;\">Paste the Apps Script Web App URL here so case entry, lookup, and the Master Dashboard can read/write live case data. Set this once, then download an updated page so it's baked in for everyone using the live link.</p>\n      <input type=\"text\" id=\"case-api-input\" placeholder=\"https://script.google.com/macros/s/.../exec\">\n      <div class=\"admin-row\"><button class=\"btn-primary\" id=\"case-api-save\">Save</button></div>\n      <p class=\"meta-note\" id=\"case-api-status\"></p>\n    </div>\n\n    <p class=\"kicker\" style=\"margin-bottom:10px;margin-top:22px;\">New entry — add to the process library</p>\n    <input type=\"text\" id=\"new-proc-name\" placeholder=\"Activity / WMS name\" style=\"margin-bottom:8px;\">\n    <input type=\"text\" id=\"new-proc-dept\" placeholder=\"Department (e.g. CIVIL, ELECTRICAL)\" style=\"margin-bottom:14px;\">\n    <div class=\"edit-steps\" id=\"new-proc-steps\"></div>\n    <div class=\"admin-row\" style=\"margin-top:14px;\">\n      <button class=\"btn-primary\" id=\"new-proc-add\">Save new process</button>\n      <button class=\"btn-ghost\" id=\"new-proc-clear\">Clear form</button>\n    </div>\n    <p class=\"meta-note\" id=\"new-proc-status\"></p>\n  </div>\n\n  <div class=\"panel\" id=\"lists-panel\" style=\"display:none;\">\n    <div class=\"admin-row\" style=\"margin-bottom:16px;\">\n      <button class=\"btn-primary save-page-btn\" data-status-target=\"lists-save-status\">Save (download updated page)</button>\n      <span class=\"meta-note\" id=\"lists-save-status\"></span>\n    </div>\n    <p class=\"kicker\" style=\"margin-bottom:10px;\">Manage dropdown lists</p>\n    <p class=\"edit-field-label\">Action types</p>\n    <div class=\"chips\" id=\"action-types-chips\" style=\"margin-bottom:8px;\"></div>\n    <div class=\"admin-row\" style=\"margin-top:0;\">\n      <input type=\"text\" id=\"new-action-type\" placeholder=\"Add a new action type\" style=\"flex:1;\">\n      <button class=\"btn-ghost\" id=\"add-action-type-btn\">Add</button>\n    </div>\n\n    <p class=\"edit-field-label\" style=\"margin-top:16px;\">Departments (used for both \"Action taken by\" and \"Float to\")</p>\n    <div class=\"chips\" id=\"dept-list-chips\" style=\"margin-bottom:8px;\"></div>\n    <div class=\"admin-row\" style=\"margin-top:0;\">\n      <input type=\"text\" id=\"new-dept\" placeholder=\"Add a new department\" style=\"flex:1;\">\n      <button class=\"btn-ghost\" id=\"add-dept-btn\">Add</button>\n    </div>\n    <p class=\"meta-note\">Click a chip to remove it. New entries appear in the dropdowns immediately — remember to download an updated page afterwards so the list is saved.</p>\n  </div>\n\n  <footer>Path definitions come from the master approval-pathway sheet. Step status is marked by whoever completes the work.</footer>\n</div>\n\n\n<script>\nconst DEFAULT_DATA = %%DATA%%;\nconst STORAGE_KEY = 'wms-pathways-v2';\nconst SHELL_TEMPLATE = %%SELF%%;\nconst ADMIN_EMAIL = 'psquality@psgroup.in';\nlet ACTION_TYPES = %%ACTIONS%%;\nlet DEPARTMENTS = %%DEPTS%%;\nconst DEFAULT_CASE_API_URL = %%CASEAPI%%;\nlet CASE_API_URL = '';\n\nlet MASTER = DEFAULT_DATA;\nlet currentDept = 'ALL';\nlet currentItem = null;\nlet isAdmin = false;\nlet hasUnsavedChanges = false;\nlet currentUserEmail = '';\nlet currentCase = null;\nlet pendingCaseProcess = null;\n\nasync function caseApi(action, params){\n  if(!CASE_API_URL){ return {ok:false, error:'No Case Database URL has been set yet. Ask admin to set it in the New Entry tab.'}; }\n  const qs = new URLSearchParams({action, ...params});\n  try{\n    const res = await fetch(`${CASE_API_URL}?${qs.toString()}`);\n    if(!res.ok) return {ok:false, error:`Server responded with status ${res.status}`};\n    return await res.json();\n  } catch(e){\n    return {ok:false, error:'Could not reach the case database. Check the Case Database URL and your connection.'};\n  }\n}\n\nconst finderPanel = document.getElementById('finder-panel');\nconst pathwayPanel = document.getElementById('pathway-panel');\nconst dashboardPanel = document.getElementById('dashboard-panel');\nconst newentryPanel = document.getElementById('newentry-panel');\nconst listsPanel = document.getElementById('lists-panel');\nconst tabsBar = document.getElementById('tabs-bar');\n\nfunction escapeHtml(s){ return String(s).replace(/[&<>\"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[m])); }\n\nfunction taskLabel(item){\n  const pos = MASTER.filter(m => m._id !== undefined).slice().sort((a,b)=>a._id-b._id).findIndex(m => m._id === item._id);\n  return 'Task ' + (pos + 1);\n}\n\nfunction stageInfo(item){\n  const steps = item.steps || [];\n  if(steps.length === 0) return {state:'undefined', text:'Pathway not yet defined', idx:-1};\n  const idx = steps.findIndex(s => (s.status || 'pending') !== 'done');\n  if(idx === -1) return {state:'complete', text:'All steps complete', idx:-1};\n  const s = steps[idx];\n  return {state:'progress', idx, text:`Step ${idx+1} of ${steps.length} — with ${s.by || 'the responsible department'}`};\n}\n\nfunction renderTabsBar(){\n  if(!isAdmin){ tabsBar.innerHTML = ''; return; }\n  tabsBar.innerHTML = `\n    <div class=\"tab\" id=\"tab-newentry\">New entry</div>\n    <div class=\"tab active\" id=\"tab-finder\">Find activity</div>\n    <div class=\"tab\" id=\"tab-dashboard\">Master dashboard</div>\n    <div class=\"tab\" id=\"tab-lists\">Manage lists</div>\n  `;\n  document.getElementById('tab-newentry').onclick = () => showTab('newentry');\n  document.getElementById('tab-finder').onclick = () => showTab('finder');\n  document.getElementById('tab-dashboard').onclick = () => showTab('dashboard');\n  document.getElementById('tab-lists').onclick = () => showTab('lists');\n  const finderSaveRow = document.getElementById('finder-save-row');\n  if(finderSaveRow) finderSaveRow.style.display = 'flex';\n}\n\nfunction showTab(which){\n  if(!isAdmin) which = 'finder';\n  const tf = document.getElementById('tab-finder');\n  const td = document.getElementById('tab-dashboard');\n  const tn = document.getElementById('tab-newentry');\n  const tl = document.getElementById('tab-lists');\n  if(tf) tf.classList.toggle('active', which==='finder');\n  if(td) td.classList.toggle('active', which==='dashboard');\n  if(tn) tn.classList.toggle('active', which==='newentry');\n  if(tl) tl.classList.toggle('active', which==='lists');\n  finderPanel.style.display = which==='finder' ? 'block' : 'none';\n  dashboardPanel.style.display = which==='dashboard' ? 'block' : 'none';\n  newentryPanel.style.display = which==='newentry' ? 'block' : 'none';\n  listsPanel.style.display = which==='lists' ? 'block' : 'none';\n  pathwayPanel.style.display = 'none';\n  if(which==='dashboard') renderDashboard();\n  if(which==='lists'){ renderActionTypeChips(); renderDeptChips(); }\n}\n\n\nfunction uniqueDepts(data){ return ['ALL', ...Array.from(new Set(data.map(d => d.dept || 'GENERAL')))]; }\n\nfunction renderChips(){\n  const el = document.getElementById('dept-chips');\n  el.innerHTML = '';\n  uniqueDepts(MASTER).forEach(d => {\n    const c = document.createElement('div');\n    c.className = 'chip' + (d === currentDept ? ' active' : '');\n    c.textContent = d === 'ALL' ? 'All' : d;\n    c.onclick = () => { currentDept = d; renderChips(); renderResults(); };\n    el.appendChild(c);\n  });\n}\n\nfunction renderResults(){\n  const q = document.getElementById('search').value.trim().toLowerCase();\n  const el = document.getElementById('results');\n  const filtered = MASTER.filter(item => {\n    const deptOk = currentDept === 'ALL' || (item.dept || 'GENERAL') === currentDept;\n    const text = (item.name + ' ' + (item.dept||'')).toLowerCase();\n    return deptOk && (q === '' || text.includes(q));\n  });\n  el.innerHTML = '';\n  if(filtered.length === 0){ el.innerHTML = '<div class=\"empty-note\">No matching activity.</div>'; return; }\n  filtered.forEach(item => {\n    const row = document.createElement('div');\n    row.className = 'result';\n    row.innerHTML = `<span class=\"name\">${escapeHtml(item.name)}</span><span style=\"display:flex;align-items:center;gap:10px;\"><span class=\"dept\">${escapeHtml(item.dept||'')}</span><span class=\"back-link\" data-view-only=\"1\" style=\"font-size:11px;\">view steps</span></span>`;\n    row.querySelector('[data-view-only]').onclick = (ev) => { ev.stopPropagation(); openPathway(item); };\n    row.onclick = () => openCaseEntry(item);\n    el.appendChild(row);\n  });\n}\ndocument.getElementById('search').addEventListener('input', renderResults);\n\nasync function openCaseEntry(item){\n  pendingCaseProcess = item;\n  finderPanel.style.display = 'none';\n  document.getElementById('case-entry-panel').style.display = 'block';\n  document.getElementById('case-entry-title').textContent = item.name;\n  document.getElementById('case-entry-caseno').textContent = 'Case No.: fetching…';\n  document.getElementById('case-subject').value = '';\n  document.getElementById('case-project').value = '';\n  document.getElementById('case-location').value = '';\n  document.getElementById('case-date-start').value = new Date().toISOString().slice(0,10);\n  document.getElementById('case-date-end').value = '';\n  document.getElementById('case-status').value = 'In process';\n  document.getElementById('case-entry-status').textContent = '';\n  const res = await caseApi('nextCaseNumber', {});\n  document.getElementById('case-entry-caseno').textContent = res.ok\n    ? `Case No.: ${res.nextCase} (tentative — confirmed on save)`\n    : `Case No.: (assigned on save) — ${res.error || ''}`;\n}\n\ndocument.getElementById('case-entry-back').onclick = () => {\n  document.getElementById('case-entry-panel').style.display = 'none';\n  pendingCaseProcess = null;\n  showTab('finder');\n};\n\ndocument.getElementById('case-entry-save').onclick = async () => {\n  const statusEl = document.getElementById('case-entry-status');\n  const item = pendingCaseProcess;\n  if(!item) return;\n  const params = {\n    pathType: item.name,\n    subject: document.getElementById('case-subject').value.trim(),\n    project: document.getElementById('case-project').value.trim(),\n    location: document.getElementById('case-location').value.trim(),\n    dateStart: document.getElementById('case-date-start').value,\n    dateEnd: document.getElementById('case-date-end').value,\n    status: document.getElementById('case-status').value\n  };\n  statusEl.textContent = 'Saving…';\n  const res = await caseApi('createCase', params);\n  if(!res.ok){ statusEl.textContent = 'Could not save: ' + (res.error || 'unknown error'); return; }\n  currentCase = { caseNo: res.caseNo, ...params };\n  document.getElementById('case-entry-panel').style.display = 'none';\n  openPathway(item);\n};\n\ndocument.getElementById('case-lookup-btn').onclick = async () => {\n  const statusEl = document.getElementById('case-lookup-status');\n  const caseNo = document.getElementById('case-lookup-input').value.trim();\n  if(!caseNo){ statusEl.textContent = 'Enter a case number.'; return; }\n  statusEl.textContent = 'Looking up…';\n  const res = await caseApi('getCase', {caseNo});\n  if(!res.ok){ statusEl.textContent = res.error || 'Case not found.'; return; }\n  currentCase = res.case;\n  const process = MASTER.find(p => p.name === res.case.pathType);\n  if(!process){\n    statusEl.textContent = `Found Case ${res.case.caseNo}, but \"${res.case.pathType}\" isn't in this copy's process library, so its steps can't be shown here.`;\n    return;\n  }\n  statusEl.textContent = '';\n  openPathway(process);\n};\n\nfunction openPathway(item){\n  currentItem = item;\n  finderPanel.style.display = 'none';\n  dashboardPanel.style.display = 'none';\n  newentryPanel.style.display = 'none';\n  document.getElementById('case-entry-panel').style.display = 'none';\n  pathwayPanel.style.display = 'block';\n  document.getElementById('edit-link').style.display = isAdmin ? 'block' : 'none';\n  document.getElementById('delete-link').style.display = isAdmin ? 'block' : 'none';\n  renderCaseBanner();\n  renderPathway();\n}\n\nfunction renderCaseBanner(){\n  const banner = document.getElementById('case-banner');\n  if(!currentCase || currentCase.pathType !== currentItem.name){\n    banner.style.display = 'none';\n    return;\n  }\n  banner.style.display = 'block';\n  document.getElementById('cb-caseno').textContent = currentCase.caseNo;\n  document.getElementById('cb-subject').value = currentCase.subject || '';\n  document.getElementById('cb-project').value = currentCase.project || '';\n  document.getElementById('cb-location').value = currentCase.location || '';\n  document.getElementById('cb-date-start').value = currentCase.dateStart || '';\n  document.getElementById('cb-date-end').value = currentCase.dateEnd || '';\n  document.getElementById('cb-status').value = currentCase.status || 'In process';\n}\n\ndocument.getElementById('case-banner-save').onclick = async () => {\n  const statusEl = document.getElementById('case-banner-status');\n  if(!currentCase) return;\n  const params = {\n    caseNo: currentCase.caseNo,\n    subject: document.getElementById('cb-subject').value.trim(),\n    project: document.getElementById('cb-project').value.trim(),\n    location: document.getElementById('cb-location').value.trim(),\n    dateStart: document.getElementById('cb-date-start').value,\n    dateEnd: document.getElementById('cb-date-end').value,\n    status: document.getElementById('cb-status').value\n  };\n  statusEl.textContent = 'Saving…';\n  const res = await caseApi('updateCase', params);\n  if(!res.ok){ statusEl.textContent = 'Could not save: ' + (res.error || 'unknown error'); return; }\n  Object.assign(currentCase, params);\n  statusEl.textContent = 'Saved.';\n};\n\nfunction itemFullTitle(item){\n  return `${item.name}${item.dept ? ' ('+item.dept+')' : ''}`;\n}\n\nfunction renderPathway(){\n  const item = currentItem;\n  document.getElementById('pw-title').textContent = item.name;\n  document.getElementById('pw-dept').textContent = item.dept || '';\n  document.getElementById('email-subject').innerHTML = `Suggested email subject: <b>${escapeHtml(taskLabel(item))} — ${escapeHtml(itemFullTitle(item))}</b>`;\n\n  const stage = stageInfo(item);\n  const banner = document.getElementById('stage-banner');\n  if(stage.state === 'undefined'){\n    banner.innerHTML = '';\n  } else if(stage.state === 'complete'){\n    banner.innerHTML = `<div class=\"stage-banner complete\">&#10003; ${stage.text}</div>`;\n  } else {\n    banner.innerHTML = `<div class=\"stage-banner active\">&#9679; Currently at: ${escapeHtml(stage.text)}</div>`;\n  }\n\n  const stepsEl = document.getElementById('steps');\n  stepsEl.innerHTML = '';\n  const steps = item.steps || [];\n  if(steps.length === 0){\n    stepsEl.innerHTML = '<p class=\"undefined\">Pathway not yet defined for this activity — check with QA-QC / planning.</p>';\n  } else {\n    steps.forEach((s, i) => {\n      const status = s.status || 'pending';\n      const isDone = status === 'done';\n      const isCurrent = !isDone && stage.idx === i;\n      const div = document.createElement('div');\n      div.className = 'step';\n      const metaLine = (s.updatedBy || s.updatedAt)\n        ? `<div class=\"done-meta\">Updated by ${escapeHtml(s.updatedBy || '—')}${s.updatedAt ? ' · '+escapeHtml(s.updatedAt) : ''}</div>`\n        : '';\n      div.innerHTML = `\n        <div class=\"step-num ${isDone?'done':isCurrent?'current':''}\">${isDone?'&#10003;':i+1}</div>\n        <div class=\"step-body ${isDone?'done':isCurrent?'current':''} status-${status}\">\n          <p class=\"step-desc\">${escapeHtml(s.material || '(not yet defined)')}</p>\n          <div class=\"step-tags\">\n            ${s.action ? `<span class=\"tag action\">Action: ${escapeHtml(s.action)}</span>` : ''}\n            ${s.by ? `<span class=\"tag dept\">By: ${escapeHtml(s.by)}</span>` : ''}\n            ${s.floatTo ? `<span class=\"tag dept\">&rarr; ${escapeHtml(s.floatTo)}</span>` : ''}\n          </div>\n          <div class=\"status-row\">\n            <select class=\"status-select\" data-status-idx=\"${i}\">\n              <option value=\"done\" ${status==='done'?'selected':''}>Done</option>\n              <option value=\"pending\" ${status==='pending'?'selected':''}>Pending</option>\n              <option value=\"notknown\" ${status==='notknown'?'selected':''}>Not known</option>\n            </select>\n            ${metaLine}\n          </div>\n        </div>`;\n      stepsEl.appendChild(div);\n    });\n  }\n\n  stepsEl.querySelectorAll('[data-status-idx]').forEach(sel => {\n    sel.onchange = () => setStepStatus(parseInt(sel.dataset.statusIdx), sel.value);\n  });\n\n  document.getElementById('copy-note').textContent = '';\n  renderFlowPreview(item);\n  renderPrintSteps(item);\n}\n\nconst PRINT_STEP_FILLS = ['#DCE6F1','#D9EAD3','#FFF2CC','#FCE5CD','#EAD1DC','#D0E0E3'];\n\nfunction renderPrintSteps(item){\n  const el = document.getElementById('print-steps');\n  const steps = item.steps || [];\n  let html = `<div class=\"print-task-title\">${escapeHtml(taskLabel(item))} — ${escapeHtml(itemFullTitle(item))}</div>`;\n  if(steps.length === 0){\n    html += `<p style=\"font-style:italic;color:#8A99A6;font-size:12.5px;\">Pathway not yet defined for this activity — check with QA-QC / planning.</p>`;\n  } else {\n    const statusLabels = {done:'Done', pending:'Pending', notknown:'Not known'};\n    steps.forEach((s, i) => {\n      const fill = PRINT_STEP_FILLS[i % PRINT_STEP_FILLS.length];\n      const status = s.status || 'pending';\n      html += `<div class=\"print-step\">\n        <div class=\"print-step-box\" style=\"background:${fill};\">\n          <div class=\"print-step-top\"><span>STEP ${i+1}</span><span>Action: ${escapeHtml(s.action || '—')}</span></div>\n          <p class=\"print-step-desc\">${escapeHtml(s.material || '(not yet defined)')}${status==='done' ? ' &#10003;' : ''}</p>\n          <div class=\"print-step-by\">By: ${escapeHtml(s.by || '—')}</div>\n          <div class=\"print-step-float\">Float to: ${escapeHtml(s.floatTo || '—')}</div>\n          <div class=\"print-step-status\">Status: ${statusLabels[status]}${s.updatedBy ? ' — '+escapeHtml(s.updatedBy) : ''}</div>\n        </div>\n      </div>`;\n      if(i < steps.length - 1){\n        html += `<div class=\"print-arrow\">&#11015;</div>`;\n      }\n    });\n  }\n  el.innerHTML = html;\n}\n\nasync function setStepStatus(i, value){\n  const item = currentItem;\n  item.steps[i].status = value;\n  item.steps[i].updatedBy = currentUserEmail || '';\n  item.steps[i].updatedAt = new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'});\n  await persist(item);\n  markDirty();\n  renderPathway();\n}\n\nfunction persist(item){\n  const idx = MASTER.findIndex(m => m._id === item._id);\n  if(idx > -1) MASTER[idx] = item;\n}\n\nconst STATUS_LABELS = {done:'DONE', pending:'PENDING', notknown:'NOT KNOWN'};\n\nfunction buildFlowText(item){\n  let text = `SITE APPROVAL PATHWAY\\n`;\n  text += `${taskLabel(item)} — ${itemFullTitle(item)}\\n`;\n  if(!item.steps || item.steps.length === 0){\n    text += 'Pathway not yet defined for this activity — check with QA-QC / planning.';\n  } else {\n    text += item.steps.map(s => {\n      const status = s.status || 'pending';\n      return `[${STATUS_LABELS[status]}] ${s.material}${s.by ? ' ['+s.by+']' : ''}${s.floatTo ? ' \\u2192 '+s.floatTo : ''}`;\n    }).join('  \\u2192  ');\n  }\n  return text;\n}\n\nfunction buildFlowHtml(item){\n  let html = `<div style=\"font-family:Calibri,Arial,sans-serif;\">`;\n  html += `<div style=\"font-size:11px;letter-spacing:0.04em;color:#8A99A6;margin-bottom:4px;\">SITE APPROVAL PATHWAY</div>`;\n  html += `<b>${escapeHtml(taskLabel(item))} — ${escapeHtml(itemFullTitle(item))}</b><br><br>`;\n  if(!item.steps || item.steps.length === 0){\n    html += `<span style=\"color:#51606E;font-style:italic;\">Pathway not yet defined for this activity — check with QA-QC / planning.</span>`;\n  } else {\n    html += item.steps.map(s => {\n      const status = s.status || 'pending';\n      const statusColor = status === 'done' ? '#2F7A4F' : status === 'notknown' ? '#8A5A0F' : '#0B5D8F';\n      const statusTag = `<span style=\"color:${statusColor};font-weight:700;\">[${STATUS_LABELS[status]}]</span> `;\n      const by = s.by ? ` <span style=\"color:#0B5D8F;font-weight:600;\">[${escapeHtml(s.by)}]</span>` : '';\n      const floatTo = s.floatTo ? ` <span style=\"color:#8A99A6;\">&rarr; ${escapeHtml(s.floatTo)}</span>` : '';\n      return `${statusTag}<span style=\"color:#0B5D8F;\">${escapeHtml(s.material)}</span>${by}${floatTo}`;\n    }).join(' <span style=\"color:#8A99A6;\">&rarr;</span> ');\n  }\n  html += `</div>`;\n  return html;\n}\n\nfunction renderFlowPreview(item){\n  const el = document.getElementById('flow-preview');\n  let html = `<div style=\"font-size:10.5px;letter-spacing:0.04em;color:var(--ink-soft);margin-bottom:6px;\">SITE APPROVAL PATHWAY</div>`;\n  html += `<span class=\"fname\">${escapeHtml(taskLabel(item))} — ${escapeHtml(itemFullTitle(item))}</span>`;\n  if(!item.steps || item.steps.length === 0){\n    html += 'Pathway not yet defined for this activity — check with QA-QC / planning.';\n  } else {\n    html += item.steps.map(s => {\n      const status = s.status || 'pending';\n      const isDone = status === 'done';\n      const cls = 'fstep' + (isDone ? ' fdone' : '');\n      const mark = isDone ? '&#10003; ' : '';\n      const statusTag = `<span class=\"fstatus fstatus-${status}\">[${STATUS_LABELS[status]}]</span> `;\n      const by = s.by ? ` <span class=\"fby ${isDone?'fdone':''}\">[${escapeHtml(s.by)}]</span>` : '';\n      const floatTo = s.floatTo ? ` <span class=\"fby\">&rarr; ${escapeHtml(s.floatTo)}</span>` : '';\n      return `${statusTag}<span class=\"${cls}\">${mark}${escapeHtml(s.material)}</span>${by}${floatTo}`;\n    }).join('<span class=\"farrow\">&nbsp;&rarr;&nbsp;</span>');\n  }\n  el.innerHTML = html;\n}\n\ndocument.getElementById('back-link').onclick = () => { showTab('finder'); };\n\ndocument.getElementById('copy-btn').onclick = async () => {\n  const item = currentItem;\n  if(!item || !item.name) return;\n  const text = buildFlowText(item);\n  const noteEl = document.getElementById('copy-note');\n  try{\n    if(window.ClipboardItem && navigator.clipboard.write){\n      const html = buildFlowHtml(item);\n      const item2 = new ClipboardItem({\n        'text/plain': new Blob([text], {type:'text/plain'}),\n        'text/html': new Blob([html], {type:'text/html'})\n      });\n      await navigator.clipboard.write([item2]);\n      noteEl.textContent = 'Copied with colour — paste it straight into your email.';\n    } else {\n      await navigator.clipboard.writeText(text);\n      noteEl.textContent = 'Copied — paste it straight into your email.';\n    }\n  } catch(e){\n    try{\n      await navigator.clipboard.writeText(text);\n      noteEl.textContent = 'Copied (plain text) — paste it straight into your email.';\n    } catch(e2){\n      noteEl.textContent = 'Could not copy automatically — please select and copy the flow above manually.';\n    }\n  }\n};\n\ndocument.getElementById('print-btn').onclick = () => {\n  if(!currentItem) return;\n  window.print();\n};\n\ndocument.getElementById('delete-link').onclick = () => {\n  const item = currentItem;\n  if(!item) return;\n  if(!window.confirm(`Delete \"${item.name}\"? Remember to click \"Download updated page\" afterwards to save this.`)) return;\n  const idx = MASTER.findIndex(m => m._id === item._id);\n  if(idx > -1) MASTER.splice(idx, 1);\n  markDirty();\n  renderChips(); renderResults();\n  showTab('finder');\n};\n\nasync function renderDashboard(){\n  const statusEl = document.getElementById('dashboard-status');\n  const table = document.getElementById('dash-table');\n  statusEl.textContent = 'Loading…';\n  const res = await caseApi('listCases', {});\n  if(!res.ok){\n    statusEl.textContent = res.error || 'Could not load cases.';\n    table.innerHTML = '';\n    return;\n  }\n  statusEl.textContent = '';\n  const cases = res.cases || [];\n  if(cases.length === 0){\n    table.innerHTML = '<tbody><tr><td class=\"empty-note\" style=\"padding:16px 4px;\">No cases yet — start one from Find Activity.</td></tr></tbody>';\n    return;\n  }\n  const pillClassFor = (status) => status === 'Completed' ? 'done' : status === 'Discarded' ? 'notstarted' : 'progress';\n  const rows = cases.map(c => `<tr data-caseno=\"${escapeHtml(String(c.caseNo))}\">\n    <td>${escapeHtml(String(c.slNo))}</td>\n    <td class=\"task-id\">${escapeHtml(String(c.caseNo))}</td>\n    <td>${escapeHtml(c.pathType||'')}</td>\n    <td>${escapeHtml(c.subject||'')}</td>\n    <td>${escapeHtml(c.project||'')}</td>\n    <td>${escapeHtml(c.location||'')}</td>\n    <td>${escapeHtml(c.dateStart||'')}</td>\n    <td>${escapeHtml(c.dateEnd||'')}</td>\n    <td><span class=\"prog-pill ${pillClassFor(c.status)}\">${escapeHtml(c.status||'')}</span></td>\n  </tr>`).join('');\n  table.innerHTML = `<thead><tr><th>Sl. No.</th><th>Case No.</th><th>Path Type</th><th>Specific Subject</th><th>Project</th><th>Location</th><th>Commencement</th><th>Completion</th><th>Status</th></tr></thead><tbody>${rows}</tbody>`;\n  table.querySelectorAll('tr[data-caseno]').forEach(tr => {\n    tr.onclick = async () => {\n      const caseNo = tr.dataset.caseno;\n      const r2 = await caseApi('getCase', {caseNo});\n      if(!r2.ok) return;\n      currentCase = r2.case;\n      const process = MASTER.find(p => p.name === r2.case.pathType);\n      if(process) openPathway(process);\n    };\n  });\n}\ndocument.getElementById('dashboard-refresh-btn').onclick = renderDashboard;\n\nfunction loadMasterData(){\n  MASTER = DEFAULT_DATA;\n  MASTER.forEach((item,i) => {\n    if(item._id === undefined) item._id = i;\n    item.steps = (item.steps || []).map(s => ({\n      material: s.material !== undefined ? s.material : (s.desc || ''),\n      action: s.action !== undefined ? s.action : (s.type || ''),\n      by: s.by || '',\n      floatTo: s.floatTo || '',\n      status: s.status || (s.done ? 'done' : 'pending'),\n      updatedBy: s.updatedBy || s.doneBy || '',\n      updatedAt: s.updatedAt || s.doneAt || ''\n    }));\n  });\n  renderChips();\n  renderResults();\n}\n\n// ---- email domain gate (mandatory every time — nothing is remembered) ----\nconst ALLOWED_DOMAIN = '@psgroup.in';\nconst ADMIN_PASSWORD = '#pass1234';\nlet pendingAdminEmail = '';\n\nfunction showApp(email){\n  document.getElementById('gate-screen').style.display = 'none';\n  document.getElementById('password-screen').style.display = 'none';\n  document.getElementById('app-content').style.display = 'block';\n  currentUserEmail = (email || '').toLowerCase();\n  isAdmin = currentUserEmail === ADMIN_EMAIL;\n  CASE_API_URL = DEFAULT_CASE_API_URL || '';\n  const caseApiInput = document.getElementById('case-api-input');\n  if(caseApiInput) caseApiInput.value = CASE_API_URL;\n  renderTabsBar();\n  showTab('finder');\n  if(isAdmin){ renderNewProcSteps(); renderActionTypeChips(); renderDeptChips(); }\n  handleDeepLink();\n}\n\nfunction handleDeepLink(){\n  const m = window.location.hash.match(/task=(-?\\d+)/);\n  if(!m) return;\n  const id = parseInt(m[1]);\n  const item = MASTER.find(x => x._id === id);\n  if(item) openPathway(item);\n}\n\ninit();\nfunction init(){\n  loadMasterData();\n}\n\ndocument.getElementById('gate-submit').onclick = async () => {\n  const input = document.getElementById('gate-email');\n  const errEl = document.getElementById('gate-error');\n  const email = input.value.trim().toLowerCase();\n  if(!email.includes('@') || !email.endsWith(ALLOWED_DOMAIN)){\n    errEl.textContent = `Please use your @psgroup.in email address.`;\n    return;\n  }\n  errEl.textContent = '';\n  if(email === ADMIN_EMAIL){\n    pendingAdminEmail = email;\n    document.getElementById('gate-screen').style.display = 'none';\n    document.getElementById('password-screen').style.display = 'flex';\n    document.getElementById('admin-password').value = '';\n    document.getElementById('password-error').textContent = '';\n    document.getElementById('admin-password').focus();\n    return;\n  }\n  showApp(email);\n};\ndocument.getElementById('gate-email').addEventListener('keydown', (e) => {\n  if(e.key === 'Enter') document.getElementById('gate-submit').click();\n});\n\ndocument.getElementById('password-submit').onclick = () => {\n  const pwInput = document.getElementById('admin-password');\n  const errEl = document.getElementById('password-error');\n  if(pwInput.value === ADMIN_PASSWORD){\n    errEl.textContent = '';\n    showApp(pendingAdminEmail);\n  } else {\n    errEl.textContent = 'Incorrect password.';\n  }\n};\ndocument.getElementById('admin-password').addEventListener('keydown', (e) => {\n  if(e.key === 'Enter') document.getElementById('password-submit').click();\n});\ndocument.getElementById('password-back').onclick = () => {\n  pendingAdminEmail = '';\n  document.getElementById('password-screen').style.display = 'none';\n  document.getElementById('gate-screen').style.display = 'flex';\n  document.getElementById('gate-email').value = '';\n  document.getElementById('gate-error').textContent = '';\n};\n\n// ---- admin: download an updated copy of this page with current data baked in ----\nfunction markDirty(){\n  hasUnsavedChanges = true;\n  const banner = document.getElementById('save-banner');\n  if(banner && isAdmin) banner.style.display = 'block';\n}\n\nfunction markClean(){\n  hasUnsavedChanges = false;\n  const banner = document.getElementById('save-banner');\n  if(banner) banner.style.display = 'none';\n}\n\nwindow.addEventListener('beforeunload', (e) => {\n  if(isAdmin && hasUnsavedChanges){\n    e.preventDefault();\n    e.returnValue = '';\n    return '';\n  }\n});\n\nfunction runExportPage(statusElId){\n  const statusEl = document.getElementById(statusElId);\n  try{\n    const escapeForScript = (s) => s.replace(/<\\/(script)/gi, '<\\\\/$1');\n    const dataJson = escapeForScript(JSON.stringify(MASTER));\n    const actionsJson = escapeForScript(JSON.stringify(ACTION_TYPES));\n    const deptsJson = escapeForScript(JSON.stringify(DEPARTMENTS));\n    const caseApiJson = escapeForScript(JSON.stringify(CASE_API_URL || ''));\n    const selfJson = escapeForScript(JSON.stringify(SHELL_TEMPLATE));\n    const rebuilt = SHELL_TEMPLATE\n      .replace('%%DATA%%', dataJson)\n      .replace('%%ACTIONS%%', actionsJson)\n      .replace('%%DEPTS%%', deptsJson)\n      .replace('%%CASEAPI%%', caseApiJson)\n      .replace('%%SELF%%', selfJson);\n    const blob = new Blob([rebuilt], {type: 'text/html'});\n    const url = URL.createObjectURL(blob);\n    const a = document.createElement('a');\n    a.href = url;\n    a.download = 'index.html';\n    document.body.appendChild(a);\n    a.click();\n    document.body.removeChild(a);\n    setTimeout(() => URL.revokeObjectURL(url), 5000);\n    markClean();\n    if(statusEl) statusEl.textContent = 'Downloaded as index.html — replace it in your GitHub repo (same filename) so the live link updates.';\n  } catch(e){\n    if(statusEl) statusEl.textContent = 'Could not build the download — please try again.';\n  }\n}\n\ndocument.getElementById('export-page-btn').onclick = () => runExportPage('export-status');\ndocument.getElementById('save-banner-download').onclick = () => runExportPage('export-status');\ndocument.querySelectorAll('.save-page-btn').forEach(btn => {\n  btn.onclick = () => runExportPage(btn.dataset.statusTarget);\n});\n\n// ---- shared step editor: Action > Task material > Action taken by > Task material float to ----\nfunction selectOptions(list, selected){\n  return `<option value=\"\">—</option>` + list.map(v =>\n    `<option value=\"${escapeHtml(v)}\" ${v===selected?'selected':''}>${escapeHtml(v)}</option>`).join('');\n}\n\nfunction collectStepsFromContainer(containerId){\n  const box = document.getElementById(containerId);\n  const cards = box.querySelectorAll('.edit-step');\n  const steps = [];\n  cards.forEach(card => {\n    const material = card.querySelector('[data-field=\"material\"]').value.trim();\n    const action = card.querySelector('[data-field=\"action\"]').value;\n    const by = card.querySelector('[data-field=\"by\"]').value;\n    const floatTo = card.querySelector('[data-field=\"floatTo\"]').value;\n    steps.push({material, action, by, floatTo});\n  });\n  return steps;\n}\n\nfunction renderStepsEditor(containerId, steps){\n  const box = document.getElementById(containerId);\n  box.innerHTML = steps.map((s,i) => `\n    <div class=\"edit-step\" data-step-idx=\"${i}\">\n      <p class=\"edit-step-label\">\n        <span>STEP ${i+1}</span>\n        ${steps.length > 1 ? `<span class=\"edit-step-remove\" data-remove-idx=\"${i}\">remove</span>` : ''}\n      </p>\n      <p class=\"edit-field-label\">Task material</p>\n      <textarea data-field=\"material\" placeholder=\"What material / document moves in this step\">${escapeHtml(s.material||'')}</textarea>\n      <div class=\"edit-row\">\n        <div style=\"flex:1;min-width:140px;\">\n          <p class=\"edit-field-label\">Action</p>\n          <select data-field=\"action\">${selectOptions(ACTION_TYPES, s.action)}</select>\n        </div>\n        <div style=\"flex:1;min-width:140px;\">\n          <p class=\"edit-field-label\">Action taken by</p>\n          <select data-field=\"by\">${selectOptions(DEPARTMENTS, s.by)}</select>\n        </div>\n        <div style=\"flex:1;min-width:140px;\">\n          <p class=\"edit-field-label\">Task material float to</p>\n          <select data-field=\"floatTo\">${selectOptions(DEPARTMENTS, s.floatTo)}</select>\n        </div>\n      </div>\n    </div>`).join('') + `<button type=\"button\" class=\"btn-ghost add-step-btn\" id=\"${containerId}-add-btn\">+ Add another step</button>`;\n\n  box.querySelectorAll('[data-remove-idx]').forEach(link => {\n    link.onclick = () => {\n      const current = collectStepsFromContainer(containerId);\n      current.splice(parseInt(link.dataset.removeIdx), 1);\n      renderStepsEditor(containerId, current.length ? current : [{material:'',action:'',by:'',floatTo:''}]);\n    };\n  });\n  document.getElementById(`${containerId}-add-btn`).onclick = () => {\n    const current = collectStepsFromContainer(containerId);\n    current.push({material:'',action:'',by:'',floatTo:''});\n    renderStepsEditor(containerId, current);\n  };\n}\n\nfunction renderNewProcSteps(){\n  renderStepsEditor('new-proc-steps', [\n    {material:'',action:'',by:'',floatTo:''},\n    {material:'',action:'',by:'',floatTo:''},\n    {material:'',action:'',by:'',floatTo:''}\n  ]);\n}\n\nfunction renderListChips(containerId, list, onRemove){\n  const el = document.getElementById(containerId);\n  el.innerHTML = list.map((v,i) => `<div class=\"chip\" data-remove-list-idx=\"${i}\" title=\"Click to remove\">${escapeHtml(v)} &times;</div>`).join('');\n  el.querySelectorAll('[data-remove-list-idx]').forEach(chip => {\n    chip.onclick = () => onRemove(parseInt(chip.dataset.removeListIdx));\n  });\n}\n\nfunction renderActionTypeChips(){\n  renderListChips('action-types-chips', ACTION_TYPES, (i) => {\n    ACTION_TYPES.splice(i,1);\n    markDirty();\n    renderActionTypeChips();\n  });\n}\n\nfunction renderDeptChips(){\n  renderListChips('dept-list-chips', DEPARTMENTS, (i) => {\n    DEPARTMENTS.splice(i,1);\n    markDirty();\n    renderDeptChips();\n  });\n}\n\ndocument.getElementById('add-action-type-btn').onclick = () => {\n  const input = document.getElementById('new-action-type');\n  const val = input.value.trim();\n  if(val && !ACTION_TYPES.includes(val)){ ACTION_TYPES.push(val); markDirty(); renderActionTypeChips(); }\n  input.value = '';\n};\ndocument.getElementById('new-action-type').addEventListener('keydown', (e) => {\n  if(e.key === 'Enter') document.getElementById('add-action-type-btn').click();\n});\n\ndocument.getElementById('add-dept-btn').onclick = () => {\n  const input = document.getElementById('new-dept');\n  const val = input.value.trim();\n  if(val && !DEPARTMENTS.includes(val)){ DEPARTMENTS.push(val); markDirty(); renderDeptChips(); }\n  input.value = '';\n};\ndocument.getElementById('new-dept').addEventListener('keydown', (e) => {\n  if(e.key === 'Enter') document.getElementById('add-dept-btn').click();\n});\n\ndocument.getElementById('case-api-save').onclick = () => {\n  const val = document.getElementById('case-api-input').value.trim();\n  CASE_API_URL = val;\n  markDirty();\n  document.getElementById('case-api-status').textContent = val\n    ? 'Set for this session — click \"Download updated page\" above to save it for everyone using the live link.'\n    : 'Cleared for this session.';\n};\n\nfunction clearNewProcForm(){\n  document.getElementById('new-proc-name').value = '';\n  document.getElementById('new-proc-dept').value = '';\n  document.getElementById('new-proc-status').textContent = '';\n  renderNewProcSteps();\n}\ndocument.getElementById('new-proc-clear').onclick = clearNewProcForm;\n\ndocument.getElementById('new-proc-add').onclick = async () => {\n  const nameEl = document.getElementById('new-proc-name');\n  const deptEl = document.getElementById('new-proc-dept');\n  const statusEl = document.getElementById('new-proc-status');\n  const name = nameEl.value.trim();\n  const dept = deptEl.value.trim() || 'GENERAL';\n  if(!name){ statusEl.textContent = 'Enter a name for the activity first.'; return; }\n\n  const steps = collectStepsFromContainer('new-proc-steps').filter(s => s.material);\n\n  const nextId = Math.max(-1, ...MASTER.map(m => m._id ?? -1)) + 1;\n  const item = { _id: nextId, sl: MASTER.length + 1, dept, name, steps };\n  MASTER.push(item);\n  markDirty();\n  clearNewProcForm();\n  statusEl.textContent = `Added — click \"Download updated page\" below to save \"${name}\" into the file.`;\n  renderChips(); renderResults();\n};\n\n// ---- admin: edit an existing pathway's steps ----\nfunction enterEditMode(){\n  const item = currentItem;\n  const steps = (item.steps || []).length ? item.steps.slice() : [{material:'',action:'',by:'',floatTo:''}];\n  renderStepsEditor('edit-steps', steps);\n  document.getElementById('steps').style.display = 'none';\n  document.getElementById('stage-banner').style.display = 'none';\n  document.getElementById('edit-steps').style.display = 'flex';\n  document.getElementById('publish-row').style.display = 'flex';\n  document.getElementById('publish-note').textContent = '';\n}\n\nfunction exitEditMode(){\n  document.getElementById('steps').style.display = '';\n  document.getElementById('stage-banner').style.display = '';\n  document.getElementById('edit-steps').style.display = 'none';\n  document.getElementById('publish-row').style.display = 'none';\n}\n\ndocument.getElementById('edit-link').onclick = enterEditMode;\ndocument.getElementById('cancel-edit-btn').onclick = exitEditMode;\n\ndocument.getElementById('publish-btn').onclick = async () => {\n  const item = currentItem;\n  const newSteps = collectStepsFromContainer('edit-steps').filter(s => s.material);\n  item.steps = newSteps;\n  const matchIdx = MASTER.findIndex(m => m._id === item._id);\n  if(matchIdx > -1) MASTER[matchIdx] = item;\n  markDirty();\n  const note = document.getElementById('publish-note');\n  note.textContent = 'Updated for this session — click \"Download updated page\" to save it.';\n  exitEditMode();\n  renderPathway();\n};\n<\/script>\n</body>\n</html>\n";
+const ADMIN_EMAIL = 'psquality@psgroup.in';
+let ACTION_TYPES = ["Vetting","Review","Review & Approval","Sent to Responsible","Follow up","Execution"];
+let DEPARTMENTS = ["Contract","Purchase","QA-QC","Management","Vendor","PMC","Site Execution","Planning","Billing","Safety"];
+const DEFAULT_CASE_API_URL = "https://script.google.com/macros/s/AKfycbwDkBZRwzyDDWB78HoHtsrv6GPAzGNa8RFWVBJmf7ayfHIVJEdYoOz78oU2oA4k-nok8Q/exec";
+let CASE_API_URL = '';
+
+let MASTER = DEFAULT_DATA;
+let currentDept = 'ALL';
+let currentItem = null;
+let isAdmin = false;
+let hasUnsavedChanges = false;
+let currentUserEmail = '';
+let currentCase = null;
+let pendingCaseProcess = null;
+
+async function caseApi(action, params){
+  if(!CASE_API_URL){ return {ok:false, error:'No Case Database URL has been set yet. Ask admin to set it in the New Entry tab.'}; }
+  const qs = new URLSearchParams({action, ...params});
+  try{
+    const res = await fetch(`${CASE_API_URL}?${qs.toString()}`);
+    if(!res.ok) return {ok:false, error:`Server responded with status ${res.status}`};
+    return await res.json();
+  } catch(e){
+    return {ok:false, error:'Could not reach the case database. Check the Case Database URL and your connection.'};
+  }
+}
+
+const finderPanel = document.getElementById('finder-panel');
+const pathwayPanel = document.getElementById('pathway-panel');
+const dashboardPanel = document.getElementById('dashboard-panel');
+const newentryPanel = document.getElementById('newentry-panel');
+const listsPanel = document.getElementById('lists-panel');
+const tabsBar = document.getElementById('tabs-bar');
+
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+function taskLabel(item){
+  const pos = MASTER.filter(m => m._id !== undefined).slice().sort((a,b)=>a._id-b._id).findIndex(m => m._id === item._id);
+  return 'Task ' + (pos + 1);
+}
+
+function stageInfo(item){
+  const steps = item.steps || [];
+  if(steps.length === 0) return {state:'undefined', text:'Pathway not yet defined', idx:-1};
+  const idx = steps.findIndex(s => (s.status || 'pending') !== 'done');
+  if(idx === -1) return {state:'complete', text:'All steps complete', idx:-1};
+  const s = steps[idx];
+  return {state:'progress', idx, text:`Step ${idx+1} of ${steps.length} — with ${s.by || 'the responsible department'}`};
+}
+
+function renderTabsBar(){
+  if(!isAdmin){ tabsBar.innerHTML = ''; return; }
+  tabsBar.innerHTML = `
+    <div class="tab" id="tab-newentry">New entry</div>
+    <div class="tab active" id="tab-finder">Find activity</div>
+    <div class="tab" id="tab-dashboard">Master dashboard</div>
+    <div class="tab" id="tab-lists">Manage lists</div>
+  `;
+  document.getElementById('tab-newentry').onclick = () => showTab('newentry');
+  document.getElementById('tab-finder').onclick = () => showTab('finder');
+  document.getElementById('tab-dashboard').onclick = () => showTab('dashboard');
+  document.getElementById('tab-lists').onclick = () => showTab('lists');
+  const finderSaveRow = document.getElementById('finder-save-row');
+  if(finderSaveRow) finderSaveRow.style.display = 'flex';
+}
+
+function showTab(which){
+  if(!isAdmin) which = 'finder';
+  const tf = document.getElementById('tab-finder');
+  const td = document.getElementById('tab-dashboard');
+  const tn = document.getElementById('tab-newentry');
+  const tl = document.getElementById('tab-lists');
+  if(tf) tf.classList.toggle('active', which==='finder');
+  if(td) td.classList.toggle('active', which==='dashboard');
+  if(tn) tn.classList.toggle('active', which==='newentry');
+  if(tl) tl.classList.toggle('active', which==='lists');
+  finderPanel.style.display = which==='finder' ? 'block' : 'none';
+  dashboardPanel.style.display = which==='dashboard' ? 'block' : 'none';
+  newentryPanel.style.display = which==='newentry' ? 'block' : 'none';
+  listsPanel.style.display = which==='lists' ? 'block' : 'none';
+  pathwayPanel.style.display = 'none';
+  if(which==='dashboard') renderDashboard();
+  if(which==='lists'){ renderActionTypeChips(); renderDeptChips(); }
+}
+
+
+function uniqueDepts(data){ return ['ALL', ...Array.from(new Set(data.map(d => d.dept || 'GENERAL')))]; }
+
+function renderChips(){
+  const el = document.getElementById('dept-chips');
+  el.innerHTML = '';
+  uniqueDepts(MASTER).forEach(d => {
+    const c = document.createElement('div');
+    c.className = 'chip' + (d === currentDept ? ' active' : '');
+    c.textContent = d === 'ALL' ? 'All' : d;
+    c.onclick = () => { currentDept = d; renderChips(); renderResults(); };
+    el.appendChild(c);
+  });
+}
+
+function renderResults(){
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  const el = document.getElementById('results');
+  const filtered = MASTER.filter(item => {
+    const deptOk = currentDept === 'ALL' || (item.dept || 'GENERAL') === currentDept;
+    const text = (item.name + ' ' + (item.dept||'')).toLowerCase();
+    return deptOk && (q === '' || text.includes(q));
+  });
+  el.innerHTML = '';
+  if(filtered.length === 0){ el.innerHTML = '<div class="empty-note">No matching activity.</div>'; return; }
+  filtered.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'result';
+    row.innerHTML = `<span class="name">${escapeHtml(item.name)}</span><span style="display:flex;align-items:center;gap:10px;"><span class="dept">${escapeHtml(item.dept||'')}</span><span class="back-link" data-view-only="1" style="font-size:11px;">view steps</span></span>`;
+    row.querySelector('[data-view-only]').onclick = (ev) => { ev.stopPropagation(); openPathway(item); };
+    row.onclick = () => openCaseEntry(item);
+    el.appendChild(row);
+  });
+}
+document.getElementById('search').addEventListener('input', renderResults);
+
+async function openCaseEntry(item){
+  pendingCaseProcess = item;
+  finderPanel.style.display = 'none';
+  document.getElementById('case-entry-panel').style.display = 'block';
+  document.getElementById('case-entry-title').textContent = item.name;
+  document.getElementById('case-entry-caseno').textContent = 'Case No.: fetching…';
+  document.getElementById('case-subject').value = '';
+  document.getElementById('case-project').value = '';
+  document.getElementById('case-location').value = '';
+  document.getElementById('case-date-start').value = new Date().toISOString().slice(0,10);
+  document.getElementById('case-date-end').value = '';
+  document.getElementById('case-status').value = 'In process';
+  document.getElementById('case-entry-status').textContent = '';
+  const res = await caseApi('nextCaseNumber', {});
+  document.getElementById('case-entry-caseno').textContent = res.ok
+    ? `Case No.: ${res.nextCase} (tentative — confirmed on save)`
+    : `Case No.: (assigned on save) — ${res.error || ''}`;
+}
+
+document.getElementById('case-entry-back').onclick = () => {
+  document.getElementById('case-entry-panel').style.display = 'none';
+  pendingCaseProcess = null;
+  showTab('finder');
+};
+
+document.getElementById('case-entry-save').onclick = async () => {
+  const statusEl = document.getElementById('case-entry-status');
+  const item = pendingCaseProcess;
+  if(!item) return;
+  const params = {
+    pathType: item.name,
+    subject: document.getElementById('case-subject').value.trim(),
+    project: document.getElementById('case-project').value.trim(),
+    location: document.getElementById('case-location').value.trim(),
+    dateStart: document.getElementById('case-date-start').value,
+    dateEnd: document.getElementById('case-date-end').value,
+    status: document.getElementById('case-status').value
+  };
+  statusEl.textContent = 'Saving…';
+  const res = await caseApi('createCase', params);
+  if(!res.ok){ statusEl.textContent = 'Could not save: ' + (res.error || 'unknown error'); return; }
+  currentCase = { caseNo: res.caseNo, ...params };
+  document.getElementById('case-entry-panel').style.display = 'none';
+  openPathway(item);
+};
+
+document.getElementById('case-lookup-btn').onclick = async () => {
+  const statusEl = document.getElementById('case-lookup-status');
+  const caseNo = document.getElementById('case-lookup-input').value.trim();
+  if(!caseNo){ statusEl.textContent = 'Enter a case number.'; return; }
+  statusEl.textContent = 'Looking up…';
+  const res = await caseApi('getCase', {caseNo});
+  if(!res.ok){ statusEl.textContent = res.error || 'Case not found.'; return; }
+  currentCase = res.case;
+  const process = MASTER.find(p => p.name === res.case.pathType);
+  if(!process){
+    statusEl.textContent = `Found Case ${res.case.caseNo}, but "${res.case.pathType}" isn't in this copy's process library, so its steps can't be shown here.`;
+    return;
+  }
+  statusEl.textContent = '';
+  openPathway(process);
+};
+
+function openPathway(item){
+  currentItem = item;
+  finderPanel.style.display = 'none';
+  dashboardPanel.style.display = 'none';
+  newentryPanel.style.display = 'none';
+  document.getElementById('case-entry-panel').style.display = 'none';
+  pathwayPanel.style.display = 'block';
+  document.getElementById('edit-link').style.display = isAdmin ? 'block' : 'none';
+  document.getElementById('delete-link').style.display = isAdmin ? 'block' : 'none';
+  renderCaseBanner();
+  renderPathway();
+}
+
+function renderCaseBanner(){
+  const banner = document.getElementById('case-banner');
+  if(!currentCase || currentCase.pathType !== currentItem.name){
+    banner.style.display = 'none';
+    return;
+  }
+  banner.style.display = 'block';
+  document.getElementById('cb-caseno').textContent = currentCase.caseNo;
+  document.getElementById('cb-subject').value = currentCase.subject || '';
+  document.getElementById('cb-project').value = currentCase.project || '';
+  document.getElementById('cb-location').value = currentCase.location || '';
+  document.getElementById('cb-date-start').value = currentCase.dateStart || '';
+  document.getElementById('cb-date-end').value = currentCase.dateEnd || '';
+  document.getElementById('cb-status').value = currentCase.status || 'In process';
+}
+
+document.getElementById('case-banner-save').onclick = async () => {
+  const statusEl = document.getElementById('case-banner-status');
+  if(!currentCase) return;
+  const params = {
+    caseNo: currentCase.caseNo,
+    subject: document.getElementById('cb-subject').value.trim(),
+    project: document.getElementById('cb-project').value.trim(),
+    location: document.getElementById('cb-location').value.trim(),
+    dateStart: document.getElementById('cb-date-start').value,
+    dateEnd: document.getElementById('cb-date-end').value,
+    status: document.getElementById('cb-status').value
+  };
+  statusEl.textContent = 'Saving…';
+  const res = await caseApi('updateCase', params);
+  if(!res.ok){ statusEl.textContent = 'Could not save: ' + (res.error || 'unknown error'); return; }
+  Object.assign(currentCase, params);
+  statusEl.textContent = 'Saved.';
+};
+
+function itemFullTitle(item){
+  return `${item.name}${item.dept ? ' ('+item.dept+')' : ''}`;
+}
+
+function renderPathway(){
+  const item = currentItem;
+  document.getElementById('pw-title').textContent = item.name;
+  document.getElementById('pw-dept').textContent = item.dept || '';
+  document.getElementById('email-subject').innerHTML = `Suggested email subject: <b>${escapeHtml(taskLabel(item))} — ${escapeHtml(itemFullTitle(item))}</b>`;
+
+  const stage = stageInfo(item);
+  const banner = document.getElementById('stage-banner');
+  if(stage.state === 'undefined'){
+    banner.innerHTML = '';
+  } else if(stage.state === 'complete'){
+    banner.innerHTML = `<div class="stage-banner complete">&#10003; ${stage.text}</div>`;
+  } else {
+    banner.innerHTML = `<div class="stage-banner active">&#9679; Currently at: ${escapeHtml(stage.text)}</div>`;
+  }
+
+  const stepsEl = document.getElementById('steps');
+  stepsEl.innerHTML = '';
+  const steps = item.steps || [];
+  if(steps.length === 0){
+    stepsEl.innerHTML = '<p class="undefined">Pathway not yet defined for this activity — check with QA-QC / planning.</p>';
+  } else {
+    steps.forEach((s, i) => {
+      const status = s.status || 'pending';
+      const isDone = status === 'done';
+      const isCurrent = !isDone && stage.idx === i;
+      const div = document.createElement('div');
+      div.className = 'step';
+      const metaLine = (s.updatedBy || s.updatedAt)
+        ? `<div class="done-meta">Updated by ${escapeHtml(s.updatedBy || '—')}${s.updatedAt ? ' · '+escapeHtml(s.updatedAt) : ''}</div>`
+        : '';
+      div.innerHTML = `
+        <div class="step-num ${isDone?'done':isCurrent?'current':''}">${isDone?'&#10003;':i+1}</div>
+        <div class="step-body ${isDone?'done':isCurrent?'current':''} status-${status}">
+          <p class="step-desc">${escapeHtml(s.material || '(not yet defined)')}</p>
+          <div class="step-tags">
+            ${s.action ? `<span class="tag action">Action: ${escapeHtml(s.action)}</span>` : ''}
+            ${s.by ? `<span class="tag dept">By: ${escapeHtml(s.by)}</span>` : ''}
+            ${s.floatTo ? `<span class="tag dept">&rarr; ${escapeHtml(s.floatTo)}</span>` : ''}
+          </div>
+          <div class="status-row">
+            <select class="status-select" data-status-idx="${i}">
+              <option value="done" ${status==='done'?'selected':''}>Done</option>
+              <option value="pending" ${status==='pending'?'selected':''}>Pending</option>
+              <option value="notknown" ${status==='notknown'?'selected':''}>Not known</option>
+            </select>
+            ${metaLine}
+          </div>
+        </div>`;
+      stepsEl.appendChild(div);
+    });
+  }
+
+  stepsEl.querySelectorAll('[data-status-idx]').forEach(sel => {
+    sel.onchange = () => setStepStatus(parseInt(sel.dataset.statusIdx), sel.value);
+  });
+
+  document.getElementById('copy-note').textContent = '';
+  renderFlowPreview(item);
+  renderPrintSteps(item);
+}
+
+const PRINT_STEP_FILLS = ['#DCE6F1','#D9EAD3','#FFF2CC','#FCE5CD','#EAD1DC','#D0E0E3'];
+
+function renderPrintSteps(item){
+  const el = document.getElementById('print-steps');
+  const steps = item.steps || [];
+  let html = `<div class="print-task-title">${escapeHtml(taskLabel(item))} — ${escapeHtml(itemFullTitle(item))}</div>`;
+  if(steps.length === 0){
+    html += `<p style="font-style:italic;color:#8A99A6;font-size:12.5px;">Pathway not yet defined for this activity — check with QA-QC / planning.</p>`;
+  } else {
+    const statusLabels = {done:'Done', pending:'Pending', notknown:'Not known'};
+    steps.forEach((s, i) => {
+      const fill = PRINT_STEP_FILLS[i % PRINT_STEP_FILLS.length];
+      const status = s.status || 'pending';
+      html += `<div class="print-step">
+        <div class="print-step-box" style="background:${fill};">
+          <div class="print-step-top"><span>STEP ${i+1}</span><span>Action: ${escapeHtml(s.action || '—')}</span></div>
+          <p class="print-step-desc">${escapeHtml(s.material || '(not yet defined)')}${status==='done' ? ' &#10003;' : ''}</p>
+          <div class="print-step-by">By: ${escapeHtml(s.by || '—')}</div>
+          <div class="print-step-float">Float to: ${escapeHtml(s.floatTo || '—')}</div>
+          <div class="print-step-status">Status: ${statusLabels[status]}${s.updatedBy ? ' — '+escapeHtml(s.updatedBy) : ''}</div>
+        </div>
+      </div>`;
+      if(i < steps.length - 1){
+        html += `<div class="print-arrow">&#11015;</div>`;
+      }
+    });
+  }
+  el.innerHTML = html;
+}
+
+async function setStepStatus(i, value){
+  const item = currentItem;
+  item.steps[i].status = value;
+  item.steps[i].updatedBy = currentUserEmail || '';
+  item.steps[i].updatedAt = new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'});
+  await persist(item);
+  markDirty();
+  renderPathway();
+}
+
+function persist(item){
+  const idx = MASTER.findIndex(m => m._id === item._id);
+  if(idx > -1) MASTER[idx] = item;
+}
+
+const STATUS_LABELS = {done:'DONE', pending:'PENDING', notknown:'NOT KNOWN'};
+
+function buildFlowText(item){
+  let text = `SITE APPROVAL PATHWAY\n`;
+  text += `${taskLabel(item)} — ${itemFullTitle(item)}\n`;
+  if(!item.steps || item.steps.length === 0){
+    text += 'Pathway not yet defined for this activity — check with QA-QC / planning.';
+  } else {
+    text += item.steps.map(s => {
+      const status = s.status || 'pending';
+      return `[${STATUS_LABELS[status]}] ${s.material}${s.by ? ' ['+s.by+']' : ''}${s.floatTo ? ' \u2192 '+s.floatTo : ''}`;
+    }).join('  \u2192  ');
+  }
+  return text;
+}
+
+function buildFlowHtml(item){
+  let html = `<div style="font-family:Calibri,Arial,sans-serif;">`;
+  html += `<div style="font-size:11px;letter-spacing:0.04em;color:#8A99A6;margin-bottom:4px;">SITE APPROVAL PATHWAY</div>`;
+  html += `<b>${escapeHtml(taskLabel(item))} — ${escapeHtml(itemFullTitle(item))}</b><br><br>`;
+  if(!item.steps || item.steps.length === 0){
+    html += `<span style="color:#51606E;font-style:italic;">Pathway not yet defined for this activity — check with QA-QC / planning.</span>`;
+  } else {
+    html += item.steps.map(s => {
+      const status = s.status || 'pending';
+      const statusColor = status === 'done' ? '#2F7A4F' : status === 'notknown' ? '#8A5A0F' : '#0B5D8F';
+      const statusTag = `<span style="color:${statusColor};font-weight:700;">[${STATUS_LABELS[status]}]</span> `;
+      const by = s.by ? ` <span style="color:#0B5D8F;font-weight:600;">[${escapeHtml(s.by)}]</span>` : '';
+      const floatTo = s.floatTo ? ` <span style="color:#8A99A6;">&rarr; ${escapeHtml(s.floatTo)}</span>` : '';
+      return `${statusTag}<span style="color:#0B5D8F;">${escapeHtml(s.material)}</span>${by}${floatTo}`;
+    }).join(' <span style="color:#8A99A6;">&rarr;</span> ');
+  }
+  html += `</div>`;
+  return html;
+}
+
+function renderFlowPreview(item){
+  const el = document.getElementById('flow-preview');
+  let html = `<div style="font-size:10.5px;letter-spacing:0.04em;color:var(--ink-soft);margin-bottom:6px;">SITE APPROVAL PATHWAY</div>`;
+  html += `<span class="fname">${escapeHtml(taskLabel(item))} — ${escapeHtml(itemFullTitle(item))}</span>`;
+  if(!item.steps || item.steps.length === 0){
+    html += 'Pathway not yet defined for this activity — check with QA-QC / planning.';
+  } else {
+    html += item.steps.map(s => {
+      const status = s.status || 'pending';
+      const isDone = status === 'done';
+      const cls = 'fstep' + (isDone ? ' fdone' : '');
+      const mark = isDone ? '&#10003; ' : '';
+      const statusTag = `<span class="fstatus fstatus-${status}">[${STATUS_LABELS[status]}]</span> `;
+      const by = s.by ? ` <span class="fby ${isDone?'fdone':''}">[${escapeHtml(s.by)}]</span>` : '';
+      const floatTo = s.floatTo ? ` <span class="fby">&rarr; ${escapeHtml(s.floatTo)}</span>` : '';
+      return `${statusTag}<span class="${cls}">${mark}${escapeHtml(s.material)}</span>${by}${floatTo}`;
+    }).join('<span class="farrow">&nbsp;&rarr;&nbsp;</span>');
+  }
+  el.innerHTML = html;
+}
+
+document.getElementById('back-link').onclick = () => { showTab('finder'); };
+
+document.getElementById('copy-btn').onclick = async () => {
+  const item = currentItem;
+  if(!item || !item.name) return;
+  const text = buildFlowText(item);
+  const noteEl = document.getElementById('copy-note');
+  try{
+    if(window.ClipboardItem && navigator.clipboard.write){
+      const html = buildFlowHtml(item);
+      const item2 = new ClipboardItem({
+        'text/plain': new Blob([text], {type:'text/plain'}),
+        'text/html': new Blob([html], {type:'text/html'})
+      });
+      await navigator.clipboard.write([item2]);
+      noteEl.textContent = 'Copied with colour — paste it straight into your email.';
+    } else {
+      await navigator.clipboard.writeText(text);
+      noteEl.textContent = 'Copied — paste it straight into your email.';
+    }
+  } catch(e){
+    try{
+      await navigator.clipboard.writeText(text);
+      noteEl.textContent = 'Copied (plain text) — paste it straight into your email.';
+    } catch(e2){
+      noteEl.textContent = 'Could not copy automatically — please select and copy the flow above manually.';
+    }
+  }
+};
+
+document.getElementById('print-btn').onclick = () => {
+  if(!currentItem) return;
+  window.print();
+};
+
+document.getElementById('delete-link').onclick = () => {
+  const item = currentItem;
+  if(!item) return;
+  if(!window.confirm(`Delete "${item.name}"? Remember to click "Download updated page" afterwards to save this.`)) return;
+  const idx = MASTER.findIndex(m => m._id === item._id);
+  if(idx > -1) MASTER.splice(idx, 1);
+  markDirty();
+  renderChips(); renderResults();
+  showTab('finder');
+};
+
+async function renderDashboard(){
+  const statusEl = document.getElementById('dashboard-status');
+  const table = document.getElementById('dash-table');
+  statusEl.textContent = 'Loading…';
+  const res = await caseApi('listCases', {});
+  if(!res.ok){
+    statusEl.textContent = res.error || 'Could not load cases.';
+    table.innerHTML = '';
+    return;
+  }
+  statusEl.textContent = '';
+  const cases = res.cases || [];
+  if(cases.length === 0){
+    table.innerHTML = '<tbody><tr><td class="empty-note" style="padding:16px 4px;">No cases yet — start one from Find Activity.</td></tr></tbody>';
+    return;
+  }
+  const pillClassFor = (status) => status === 'Completed' ? 'done' : status === 'Discarded' ? 'notstarted' : 'progress';
+  const rows = cases.map(c => `<tr data-caseno="${escapeHtml(String(c.caseNo))}">
+    <td>${escapeHtml(String(c.slNo))}</td>
+    <td class="task-id">${escapeHtml(String(c.caseNo))}</td>
+    <td>${escapeHtml(c.pathType||'')}</td>
+    <td>${escapeHtml(c.subject||'')}</td>
+    <td>${escapeHtml(c.project||'')}</td>
+    <td>${escapeHtml(c.location||'')}</td>
+    <td>${escapeHtml(c.dateStart||'')}</td>
+    <td>${escapeHtml(c.dateEnd||'')}</td>
+    <td><span class="prog-pill ${pillClassFor(c.status)}">${escapeHtml(c.status||'')}</span></td>
+  </tr>`).join('');
+  table.innerHTML = `<thead><tr><th>Sl. No.</th><th>Case No.</th><th>Path Type</th><th>Specific Subject</th><th>Project</th><th>Location</th><th>Commencement</th><th>Completion</th><th>Status</th></tr></thead><tbody>${rows}</tbody>`;
+  table.querySelectorAll('tr[data-caseno]').forEach(tr => {
+    tr.onclick = async () => {
+      const caseNo = tr.dataset.caseno;
+      const r2 = await caseApi('getCase', {caseNo});
+      if(!r2.ok) return;
+      currentCase = r2.case;
+      const process = MASTER.find(p => p.name === r2.case.pathType);
+      if(process) openPathway(process);
+    };
+  });
+}
+document.getElementById('dashboard-refresh-btn').onclick = renderDashboard;
+
+function loadMasterData(){
+  MASTER = DEFAULT_DATA;
+  MASTER.forEach((item,i) => {
+    if(item._id === undefined) item._id = i;
+    item.steps = (item.steps || []).map(s => ({
+      material: s.material !== undefined ? s.material : (s.desc || ''),
+      action: s.action !== undefined ? s.action : (s.type || ''),
+      by: s.by || '',
+      floatTo: s.floatTo || '',
+      status: s.status || (s.done ? 'done' : 'pending'),
+      updatedBy: s.updatedBy || s.doneBy || '',
+      updatedAt: s.updatedAt || s.doneAt || ''
+    }));
+  });
+  renderChips();
+  renderResults();
+}
+
+// ---- email domain gate (mandatory every time — nothing is remembered) ----
+const ALLOWED_DOMAIN = '@psgroup.in';
+const ADMIN_PASSWORD = '#pass1234';
+let pendingAdminEmail = '';
+
+function showApp(email){
+  document.getElementById('gate-screen').style.display = 'none';
+  document.getElementById('password-screen').style.display = 'none';
+  document.getElementById('app-content').style.display = 'block';
+  currentUserEmail = (email || '').toLowerCase();
+  isAdmin = currentUserEmail === ADMIN_EMAIL;
+  CASE_API_URL = DEFAULT_CASE_API_URL || '';
+  const caseApiInput = document.getElementById('case-api-input');
+  if(caseApiInput) caseApiInput.value = CASE_API_URL;
+  renderTabsBar();
+  showTab('finder');
+  if(isAdmin){ renderNewProcSteps(); renderActionTypeChips(); renderDeptChips(); }
+  handleDeepLink();
+}
+
+function handleDeepLink(){
+  const m = window.location.hash.match(/task=(-?\d+)/);
+  if(!m) return;
+  const id = parseInt(m[1]);
+  const item = MASTER.find(x => x._id === id);
+  if(item) openPathway(item);
+}
+
+init();
+function init(){
+  loadMasterData();
+}
+
+document.getElementById('gate-submit').onclick = async () => {
+  const input = document.getElementById('gate-email');
+  const errEl = document.getElementById('gate-error');
+  const email = input.value.trim().toLowerCase();
+  if(!email.includes('@') || !email.endsWith(ALLOWED_DOMAIN)){
+    errEl.textContent = `Please use your @psgroup.in email address.`;
+    return;
+  }
+  errEl.textContent = '';
+  if(email === ADMIN_EMAIL){
+    pendingAdminEmail = email;
+    document.getElementById('gate-screen').style.display = 'none';
+    document.getElementById('password-screen').style.display = 'flex';
+    document.getElementById('admin-password').value = '';
+    document.getElementById('password-error').textContent = '';
+    document.getElementById('admin-password').focus();
+    return;
+  }
+  showApp(email);
+};
+document.getElementById('gate-email').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') document.getElementById('gate-submit').click();
+});
+
+document.getElementById('password-submit').onclick = () => {
+  const pwInput = document.getElementById('admin-password');
+  const errEl = document.getElementById('password-error');
+  if(pwInput.value === ADMIN_PASSWORD){
+    errEl.textContent = '';
+    showApp(pendingAdminEmail);
+  } else {
+    errEl.textContent = 'Incorrect password.';
+  }
+};
+document.getElementById('admin-password').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') document.getElementById('password-submit').click();
+});
+document.getElementById('password-back').onclick = () => {
+  pendingAdminEmail = '';
+  document.getElementById('password-screen').style.display = 'none';
+  document.getElementById('gate-screen').style.display = 'flex';
+  document.getElementById('gate-email').value = '';
+  document.getElementById('gate-error').textContent = '';
+};
+
+// ---- admin: download an updated copy of this page with current data baked in ----
+function markDirty(){
+  hasUnsavedChanges = true;
+  const banner = document.getElementById('save-banner');
+  if(banner && isAdmin) banner.style.display = 'block';
+}
+
+function markClean(){
+  hasUnsavedChanges = false;
+  const banner = document.getElementById('save-banner');
+  if(banner) banner.style.display = 'none';
+}
+
+window.addEventListener('beforeunload', (e) => {
+  if(isAdmin && hasUnsavedChanges){
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+  }
+});
+
+function runExportPage(statusElId){
+  const statusEl = document.getElementById(statusElId);
+  try{
+    const escapeForScript = (s) => s.replace(/<\/(script)/gi, '<\\/$1');
+    const dataJson = escapeForScript(JSON.stringify(MASTER));
+    const actionsJson = escapeForScript(JSON.stringify(ACTION_TYPES));
+    const deptsJson = escapeForScript(JSON.stringify(DEPARTMENTS));
+    const caseApiJson = escapeForScript(JSON.stringify(CASE_API_URL || ''));
+    const selfJson = escapeForScript(JSON.stringify(SHELL_TEMPLATE));
+    const rebuilt = SHELL_TEMPLATE
+      .replace('%%DATA%%', dataJson)
+      .replace('%%ACTIONS%%', actionsJson)
+      .replace('%%DEPTS%%', deptsJson)
+      .replace('%%CASEAPI%%', caseApiJson)
+      .replace('%%SELF%%', selfJson);
+    const blob = new Blob([rebuilt], {type: 'text/html'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'index.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    markClean();
+    if(statusEl) statusEl.textContent = 'Downloaded as index.html — replace it in your GitHub repo (same filename) so the live link updates.';
+  } catch(e){
+    if(statusEl) statusEl.textContent = 'Could not build the download — please try again.';
+  }
+}
+
+document.getElementById('export-page-btn').onclick = () => runExportPage('export-status');
+document.getElementById('save-banner-download').onclick = () => runExportPage('export-status');
+document.querySelectorAll('.save-page-btn').forEach(btn => {
+  btn.onclick = () => runExportPage(btn.dataset.statusTarget);
+});
+
+// ---- shared step editor: Action > Task material > Action taken by > Task material float to ----
+function selectOptions(list, selected){
+  return `<option value="">—</option>` + list.map(v =>
+    `<option value="${escapeHtml(v)}" ${v===selected?'selected':''}>${escapeHtml(v)}</option>`).join('');
+}
+
+function collectStepsFromContainer(containerId){
+  const box = document.getElementById(containerId);
+  const cards = box.querySelectorAll('.edit-step');
+  const steps = [];
+  cards.forEach(card => {
+    const material = card.querySelector('[data-field="material"]').value.trim();
+    const action = card.querySelector('[data-field="action"]').value;
+    const by = card.querySelector('[data-field="by"]').value;
+    const floatTo = card.querySelector('[data-field="floatTo"]').value;
+    steps.push({material, action, by, floatTo});
+  });
+  return steps;
+}
+
+function renderStepsEditor(containerId, steps){
+  const box = document.getElementById(containerId);
+  box.innerHTML = steps.map((s,i) => `
+    <div class="edit-step" data-step-idx="${i}">
+      <p class="edit-step-label">
+        <span>STEP ${i+1}</span>
+        ${steps.length > 1 ? `<span class="edit-step-remove" data-remove-idx="${i}">remove</span>` : ''}
+      </p>
+      <p class="edit-field-label">Task material</p>
+      <textarea data-field="material" placeholder="What material / document moves in this step">${escapeHtml(s.material||'')}</textarea>
+      <div class="edit-row">
+        <div style="flex:1;min-width:140px;">
+          <p class="edit-field-label">Action</p>
+          <select data-field="action">${selectOptions(ACTION_TYPES, s.action)}</select>
+        </div>
+        <div style="flex:1;min-width:140px;">
+          <p class="edit-field-label">Action taken by</p>
+          <select data-field="by">${selectOptions(DEPARTMENTS, s.by)}</select>
+        </div>
+        <div style="flex:1;min-width:140px;">
+          <p class="edit-field-label">Task material float to</p>
+          <select data-field="floatTo">${selectOptions(DEPARTMENTS, s.floatTo)}</select>
+        </div>
+      </div>
+    </div>`).join('') + `<button type="button" class="btn-ghost add-step-btn" id="${containerId}-add-btn">+ Add another step</button>`;
+
+  box.querySelectorAll('[data-remove-idx]').forEach(link => {
+    link.onclick = () => {
+      const current = collectStepsFromContainer(containerId);
+      current.splice(parseInt(link.dataset.removeIdx), 1);
+      renderStepsEditor(containerId, current.length ? current : [{material:'',action:'',by:'',floatTo:''}]);
+    };
+  });
+  document.getElementById(`${containerId}-add-btn`).onclick = () => {
+    const current = collectStepsFromContainer(containerId);
+    current.push({material:'',action:'',by:'',floatTo:''});
+    renderStepsEditor(containerId, current);
+  };
+}
+
+function renderNewProcSteps(){
+  renderStepsEditor('new-proc-steps', [
+    {material:'',action:'',by:'',floatTo:''},
+    {material:'',action:'',by:'',floatTo:''},
+    {material:'',action:'',by:'',floatTo:''}
+  ]);
+}
+
+function renderListChips(containerId, list, onRemove){
+  const el = document.getElementById(containerId);
+  el.innerHTML = list.map((v,i) => `<div class="chip" data-remove-list-idx="${i}" title="Click to remove">${escapeHtml(v)} &times;</div>`).join('');
+  el.querySelectorAll('[data-remove-list-idx]').forEach(chip => {
+    chip.onclick = () => onRemove(parseInt(chip.dataset.removeListIdx));
+  });
+}
+
+function renderActionTypeChips(){
+  renderListChips('action-types-chips', ACTION_TYPES, (i) => {
+    ACTION_TYPES.splice(i,1);
+    markDirty();
+    renderActionTypeChips();
+  });
+}
+
+function renderDeptChips(){
+  renderListChips('dept-list-chips', DEPARTMENTS, (i) => {
+    DEPARTMENTS.splice(i,1);
+    markDirty();
+    renderDeptChips();
+  });
+}
+
+document.getElementById('add-action-type-btn').onclick = () => {
+  const input = document.getElementById('new-action-type');
+  const val = input.value.trim();
+  if(val && !ACTION_TYPES.includes(val)){ ACTION_TYPES.push(val); markDirty(); renderActionTypeChips(); }
+  input.value = '';
+};
+document.getElementById('new-action-type').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') document.getElementById('add-action-type-btn').click();
+});
+
+document.getElementById('add-dept-btn').onclick = () => {
+  const input = document.getElementById('new-dept');
+  const val = input.value.trim();
+  if(val && !DEPARTMENTS.includes(val)){ DEPARTMENTS.push(val); markDirty(); renderDeptChips(); }
+  input.value = '';
+};
+document.getElementById('new-dept').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') document.getElementById('add-dept-btn').click();
+});
+
+document.getElementById('case-api-save').onclick = () => {
+  const val = document.getElementById('case-api-input').value.trim();
+  CASE_API_URL = val;
+  markDirty();
+  document.getElementById('case-api-status').textContent = val
+    ? 'Set for this session — click "Download updated page" above to save it for everyone using the live link.'
+    : 'Cleared for this session.';
+};
+
+function clearNewProcForm(){
+  document.getElementById('new-proc-name').value = '';
+  document.getElementById('new-proc-dept').value = '';
+  document.getElementById('new-proc-status').textContent = '';
+  renderNewProcSteps();
+}
+document.getElementById('new-proc-clear').onclick = clearNewProcForm;
+
+document.getElementById('new-proc-add').onclick = async () => {
+  const nameEl = document.getElementById('new-proc-name');
+  const deptEl = document.getElementById('new-proc-dept');
+  const statusEl = document.getElementById('new-proc-status');
+  const name = nameEl.value.trim();
+  const dept = deptEl.value.trim() || 'GENERAL';
+  if(!name){ statusEl.textContent = 'Enter a name for the activity first.'; return; }
+
+  const steps = collectStepsFromContainer('new-proc-steps').filter(s => s.material);
+
+  const nextId = Math.max(-1, ...MASTER.map(m => m._id ?? -1)) + 1;
+  const item = { _id: nextId, sl: MASTER.length + 1, dept, name, steps };
+  MASTER.push(item);
+  markDirty();
+  clearNewProcForm();
+  statusEl.textContent = `Added — click "Download updated page" below to save "${name}" into the file.`;
+  renderChips(); renderResults();
+};
+
+// ---- admin: edit an existing pathway's steps ----
+function enterEditMode(){
+  const item = currentItem;
+  const steps = (item.steps || []).length ? item.steps.slice() : [{material:'',action:'',by:'',floatTo:''}];
+  renderStepsEditor('edit-steps', steps);
+  document.getElementById('steps').style.display = 'none';
+  document.getElementById('stage-banner').style.display = 'none';
+  document.getElementById('edit-steps').style.display = 'flex';
+  document.getElementById('publish-row').style.display = 'flex';
+  document.getElementById('publish-note').textContent = '';
+}
+
+function exitEditMode(){
+  document.getElementById('steps').style.display = '';
+  document.getElementById('stage-banner').style.display = '';
+  document.getElementById('edit-steps').style.display = 'none';
+  document.getElementById('publish-row').style.display = 'none';
+}
+
+document.getElementById('edit-link').onclick = enterEditMode;
+document.getElementById('cancel-edit-btn').onclick = exitEditMode;
+
+document.getElementById('publish-btn').onclick = async () => {
+  const item = currentItem;
+  const newSteps = collectStepsFromContainer('edit-steps').filter(s => s.material);
+  item.steps = newSteps;
+  const matchIdx = MASTER.findIndex(m => m._id === item._id);
+  if(matchIdx > -1) MASTER[matchIdx] = item;
+  markDirty();
+  const note = document.getElementById('publish-note');
+  note.textContent = 'Updated for this session — click "Download updated page" to save it.';
+  exitEditMode();
+  renderPathway();
+};
+</script>
+</body>
+</html>
